@@ -15,7 +15,31 @@ repositories {
     }
 }
 
+configurations {
+    provided
+    compile.extendsFrom provided
+}
+
 dependencies {
     compile 'org.spongepowered:spongeapi:4.2.0-20161003.175747-12'
-    compile 'org.scala-lang:scala-library:2.12.0-M5'
+    provided 'org.scala-lang:scala-library:2.12.0-M5'
+    compile 'org.json:json:20160810'
+}
+
+task fatJar(type: Jar) {
+    manifest.from jar.manifest
+
+    classifier = 'all'
+    from {
+        (configurations.runtime - configurations.provided).collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    with jar
+}
+
+artifacts {
+    archives fatJar
 }
