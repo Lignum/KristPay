@@ -4,7 +4,8 @@ import java.io.{File, PrintWriter}
 import java.util.Scanner
 import java.util.concurrent.ThreadLocalRandom
 
-import org.json.{JSONArray, JSONObject}
+import me.lignum.kristpay.economy.KristAccount
+import org.json.{JSONArray, JSONException, JSONObject}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -40,9 +41,8 @@ class Database(dbFile: File) {
     pw
   }
 
-  load()
-
-  val accounts = ArrayBuffer[WalletAccount]()
+  val accounts = ArrayBuffer[KristAccount]()
+  var kwPassword: String = "0000"
 
   private def load(): Unit = {
     val scanner = new Scanner(dbFile)
@@ -54,19 +54,36 @@ class Database(dbFile: File) {
 
     scanner.close()
 
-    val json = new JSONObject(contents)
+    try {
+      val json = new JSONObject(contents)
 
-    if (json.has("accounts")) {
-      json.optJSONArray("accounts") match {
-        case a: JSONArray =>
-          for (i <- 0 until a.length()) {
-            a.optJSONObject(i) match {
-              case obj: JSONObject => accounts += WalletAccount(obj.optString("owner", ""), obj.optInt("balance", 0))
-              case _ =>
+      if (json.has("accounts")) {
+        json.optJSONArray("accounts") match {
+          case a: JSONArray =>
+            for (i <- 0 until a.length()) {
+              a.optJSONObject(i) match {
+                case obj: JSONObject => accounts += new KristAccount(obj.optString("owner", ""), obj.optInt("balance", 0))
+                case _ =>
+              }
             }
-          }
-        case _ =>
+          case _ =>
+        }
       }
+
+      if (json.has("config")) {
+        json.optJSONObject("config") match {
+          case obj: JSONObject =>
+            kwPassword = obj.optString("kwPassword", "0000")
+          case _ =>
+        }
+      }
+    } catch {
+      case e: JSONException =>
+        KristPayPlugin.instance.logger.error("Failed to parse {}: {}", dbFile.getName.asInstanceOf[Any], e.getMessage.asInstanceOf[Any])
+      case t: Throwable =>
+        KristPayPlugin.instance.logger.info("Error while parsing kristpay config", t)
     }
   }
+
+  load()
 }

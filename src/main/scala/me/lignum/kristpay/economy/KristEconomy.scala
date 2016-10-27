@@ -3,7 +3,7 @@ package me.lignum.kristpay.economy
 import java.util
 import java.util.{Optional, UUID}
 
-import me.lignum.kristpay.{WalletAccount, KristPayPlugin}
+import me.lignum.kristpay.KristPayPlugin
 import org.spongepowered.api.service.context.ContextCalculator
 import org.spongepowered.api.service.economy.account.{Account, UniqueAccount}
 import org.spongepowered.api.service.economy.{Currency, EconomyService}
@@ -24,22 +24,29 @@ class KristEconomy extends EconomyService {
 
   override def hasAccount(uuid: UUID): Boolean = hasAccount(uuid.toString)
 
-  override def getOrCreateAccount(uuid: UUID): Optional[UniqueAccount] =
-    Optional.empty()
+  override def getOrCreateAccount(uuid: UUID): Optional[UniqueAccount] = {
+    val opt = getOrCreateAccount(uuid.toString)
+    
+    if (opt.isPresent) {
+      val acc = opt.get()
 
-  override def getOrCreateAccount(identifier: String): Optional[Account] = {
-    val wacc = KristPayPlugin.get.database.accounts.find(_.owner == identifier)
-
-    wacc match {
-      case Some(w) => Optional.of(new KristAccount(w))
-      case None =>
-        val nacc = WalletAccount(identifier, 0)
-        KristPayPlugin.get.database.accounts += nacc
-        Optional.of(new KristAccount(nacc))
+      acc match {
+        case account: UniqueAccount => Optional.of(account)
+        case _ => Optional.empty()
+      }
+    } else {
+      Optional.empty()
     }
   }
 
-  override def registerContextCalculator(calculator: ContextCalculator[Account]): Unit = {
+  override def getOrCreateAccount(identifier: String): Optional[Account] =
+    KristPayPlugin.get.database.accounts.find(_.owner.equalsIgnoreCase(identifier)) match {
+      case Some(acc) => Optional.of(acc)
+      case None =>
+        val nacc = new KristAccount(identifier)
+        KristPayPlugin.get.database.accounts += nacc
+        Optional.of(nacc)
+    }
 
-  }
+  override def registerContextCalculator(calculator: ContextCalculator[Account]): Unit = {}
 }
