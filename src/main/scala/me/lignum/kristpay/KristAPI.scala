@@ -62,6 +62,66 @@ object KristAPI {
 }
 
 class KristAPI(val node: URL) {
+  def getBalance(address: String, callback: Option[Int] => Unit) =
+    getAddressObject(address, {
+      case Some(obj) =>
+        if (obj.has("balance")) {
+          callback(Some(obj.optInt("balance", 0)))
+        } else {
+          callback(None)
+        }
+
+      case None => callback(None)
+    })
+
+  def doesAddressExist(address: String, callback: Option[Boolean] => Unit) =
+    submitGet("addresses/" + address, {
+      case Some(resp) =>
+        val json = new JSONObject(resp)
+
+        if (!json.optBoolean("ok", false)) {
+          if (json.optString("error", "").equals("address_not_found")) {
+            callback(Some(false))
+          } else {
+            callback(None)
+          }
+        } else {
+          callback(Some(true))
+        }
+
+      case None => callback(None)
+    })
+
+  def getAddressObject(address: String, callback: Option[JSONObject] => Unit) =
+    submitGet("addresses/" + address, {
+      case Some(resp) =>
+        val json = new JSONObject(resp)
+
+        if (json.optBoolean("ok", false)) {
+          if (json.has("address")) {
+            callback(Some(json.optJSONObject("address")))
+          }
+        } else {
+          callback(None)
+        }
+
+      case None => callback(None)
+    })
+
+  def getMOTD(callback: Option[String] => Unit) =
+    submitGet("motd", {
+      case Some(motd) =>
+        val json = new JSONObject(motd)
+
+        if (json.optBoolean("ok", false)) {
+          callback(Some(json.optString("motd", "")))
+        } else {
+          callback(None)
+        }
+
+      case None => callback(None)
+    })
+
   def submitGet(route: String, callback: Option[String] => Unit) = {
     val url = new URL(node, route)
 

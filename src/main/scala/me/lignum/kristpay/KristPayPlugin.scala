@@ -24,27 +24,55 @@ class KristPayPlugin {
   val currency = new KristCurrency
 
   var database: Database = _
+  var masterWallet: MasterWallet = _
 
-  var masterAddress: String = _
-  var masterPassword: String = _
-  var masterPrivateKey: String = _
+  var failed = false
 
   @Inject
   def setLogger(lg: Logger) = logger = lg
 
   @Listener
   def onServerStart(event: GameStartedServerEvent): Unit = {
-    database = new Database(new File("kristpay.json"))
+    krist.getMOTD({
+      case Some(motd) =>
+        logger.info("Krist is up! The message of the day is \"{}\".", motd)
 
-    masterPassword = database.kwPassword
-    masterPrivateKey = KristAPI.makePrivateKey(masterPassword)
-    masterAddress = KristAPI.makeAddressV2(masterPrivateKey)
+        database = new Database(new File("kristpay.json"))
+        masterWallet = new MasterWallet(database.kwPassword)
 
-    logger.info("Using master address \"{}\"!", masterAddress)
+        krist.doesAddressExist(masterWallet.address, {
+          case Some(exists) =>
+            if (!exists)
+              fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
+            startPlugin()
+
+          case None =>
+            fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
+            startPlugin()
+        })
+
+      case None => fatalError("Krist is down!!")
+    })
+  }
+
+  def fatalError(error: String, args: Any*): Unit = {
+    logger.error("FATAL: " + error, args)
+    failed = true
+  }
+
+  def startPlugin(): Unit = {
+    if (!failed) {
+      logger.info("Using master address \"{}\"!", masterWallet.address)
+      masterWallet.startSyncSchedule()
+    } else {
+      logger.error("Can't start KristPay due to a fatal error.")
+    }
   }
 }
 
 object KristPayPlugin {
+  val ADDRESS_DOESNT_EXIST_MSG = "The address {} doesn't exist."
+
   var instance: KristPayPlugin = _
 
   def get = instance
