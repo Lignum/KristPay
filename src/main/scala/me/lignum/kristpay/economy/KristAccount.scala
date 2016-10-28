@@ -34,6 +34,7 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
 
       balance -= amount.intValue()
       target.balance += amount.intValue()
+      KristPayPlugin.get.database.save()
       new KristTransferResult(to, this, currency, amount, contexts, ResultType.SUCCESS, TransactionTypes.TRANSFER)
 
     case _ =>
@@ -41,6 +42,11 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
   }
 
   override def setBalance(currency: Currency, amount: BigDecimal, cause: Cause, contexts: util.Set[Context]): TransactionResult = {
+    if (amount.intValue() < 0) {
+      // Balance should never be negative.
+      return new KristTransactionResult(this, amount, contexts, ResultType.FAILED, TransactionTypes.WITHDRAW)
+    }
+
     val delta = balance - amount.intValue()
 
     if (delta < 0) {
@@ -56,11 +62,13 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
         new KristTransactionResult(this, BigDecimal.valueOf(0), contexts, ResultType.FAILED, TransactionTypes.DEPOSIT)
       } else {
         balance = amount.intValue()
+        KristPayPlugin.get.database.save()
         new KristTransactionResult(this, amount, contexts, ResultType.SUCCESS, TransactionTypes.DEPOSIT)
       }
     } else if (delta > 0) {
       // Decrease in balance, no problem here.
       balance = amount.intValue()
+      KristPayPlugin.get.database.save()
       new KristTransactionResult(this, amount, contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW)
     } else {
       // No change in balance.
@@ -81,7 +89,7 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
   override def hasBalance(currency: Currency, contexts: util.Set[Context]): Boolean = true
 
   override def withdraw(currency: Currency, amount: BigDecimal, cause: Cause, contexts: util.Set[Context]): TransactionResult =
-    setBalance(currency, BigDecimal.valueOf(balance - amount.intValue()), cause, contexts)
+    setBalance(currency, BigDecimal.valueOf(Math.max(0, balance - amount.intValue())), cause, contexts)
 
   override def deposit(currency: Currency, amount: BigDecimal, cause: Cause, contexts: util.Set[Context]): TransactionResult =
     setBalance(currency, BigDecimal.valueOf(balance + amount.intValue()), cause, contexts)
@@ -89,6 +97,7 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
   override def resetBalance(currency: Currency, cause: Cause, contexts: util.Set[Context]): TransactionResult = {
     val previous = balance
     balance = getDefaultBalance(currency).intValue()
+    KristPayPlugin.get.database.save()
 
     new KristTransactionResult(
       this, BigDecimal.valueOf(previous), contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW

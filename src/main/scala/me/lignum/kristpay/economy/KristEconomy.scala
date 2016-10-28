@@ -45,6 +45,7 @@ class KristEconomy extends EconomyService {
       case None =>
         val nacc = new KristAccount(identifier)
         KristPayPlugin.get.database.accounts += nacc
+        KristPayPlugin.get.database.save()
         Optional.of(nacc)
     }
 

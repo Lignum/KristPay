@@ -22,7 +22,7 @@ class Database(dbFile: File) {
       d.put("config", config)
 
       val pw = new PrintWriter(dbFile)
-      pw.write(d.toString(4))
+      pw.write(d.toString())
       pw.close()
     } catch {
       case t: Throwable => KristPayPlugin.get.logger.error("Failed to create " + dbFile.getAbsolutePath, t)
@@ -46,7 +46,7 @@ class Database(dbFile: File) {
 
   def getTotalDistributedKrist: Int = accounts.foldLeft(0) { (a, b) => a + b.balance }
 
-  private def load(): Unit = {
+  def load(): Unit = {
     val scanner = new Scanner(dbFile)
     var contents = ""
 
@@ -85,6 +85,28 @@ class Database(dbFile: File) {
       case t: Throwable =>
         KristPayPlugin.instance.logger.info("Error while parsing kristpay config", t)
     }
+  }
+
+  def save(): Unit = {
+    val json = new JSONObject()
+    val accs = new JSONArray()
+
+    accounts.foreach(acc => {
+      val obj = new JSONObject()
+      obj.put("owner", acc.owner)
+      obj.put("balance", acc.balance)
+      accs.put(obj)
+    })
+
+    json.put("accounts", accs)
+
+    val config = new JSONObject()
+    config.put("kwPassword", kwPassword)
+    json.put("config", config)
+
+    val pw = new PrintWriter(dbFile)
+    pw.write(json.toString())
+    pw.close()
   }
 
   load()

@@ -4,11 +4,14 @@ import java.io.File
 import java.net.URL
 
 import com.google.inject.Inject
-import me.lignum.kristpay.economy.KristCurrency
+import me.lignum.kristpay.commands.{Balance, SetBalance}
+import me.lignum.kristpay.economy.{KristCurrency, KristEconomy}
 import org.slf4j.Logger
+import org.spongepowered.api.Sponge
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.game.state.GameStartedServerEvent
 import org.spongepowered.api.plugin.Plugin
+import org.spongepowered.api.service.economy.EconomyService
 
 @Plugin(
   id = "kristpay",
@@ -25,6 +28,8 @@ class KristPayPlugin {
 
   var database: Database = _
   var masterWallet: MasterWallet = _
+
+  var economyService: KristEconomy = _
 
   var failed = false
 
@@ -44,7 +49,7 @@ class KristPayPlugin {
           case Some(exists) =>
             if (!exists)
               fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
-            startPlugin()
+              startPlugin()
 
           case None =>
             fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
@@ -61,6 +66,12 @@ class KristPayPlugin {
   }
 
   def startPlugin(): Unit = {
+    economyService = new KristEconomy
+    Sponge.getServiceManager.setProvider(this, classOf[EconomyService], economyService)
+
+    Sponge.getCommandManager.register(this, Balance.spec, "balance", "bal")
+    Sponge.getCommandManager.register(this, SetBalance.spec, "setbalance", "setbal")
+
     if (!failed) {
       logger.info("Using master address \"{}\"!", masterWallet.address)
       masterWallet.startSyncSchedule()
