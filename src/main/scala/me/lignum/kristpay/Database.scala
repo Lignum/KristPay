@@ -44,6 +44,8 @@ class Database(dbFile: File) {
   val accounts = ArrayBuffer[KristAccount]()
   var kwPassword: String = "0000"
 
+  def getTotalDistributedKrist: Int = accounts.foldLeft(0) { (a, b) => a + b.balance }
+
   private def load(): Unit = {
     val scanner = new Scanner(dbFile)
     var contents = ""

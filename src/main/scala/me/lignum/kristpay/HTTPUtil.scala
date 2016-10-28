@@ -28,11 +28,10 @@ object HTTPUtil {
         val br = new BufferedReader(new InputStreamReader(is))
         var response = ""
 
-        var line = ""
         var loop = true
 
         while (loop) {
-          line = br.readLine()
+          val line = br.readLine()
 
           if (line == null) {
             loop = false
@@ -72,7 +71,6 @@ object HTTPUtil {
         val br = new BufferedReader(new InputStreamReader(is))
         var response = ""
 
-        var line = ""
         var loop = true
 
         while (loop) {

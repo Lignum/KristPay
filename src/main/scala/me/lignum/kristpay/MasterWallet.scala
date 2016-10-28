@@ -8,7 +8,7 @@ class MasterWallet(val password: String) {
   val privateKey: String = KristAPI.makePrivateKey(password)
   val address: String = KristAPI.makeAddressV2(privateKey)
 
-  private var balance: Int = 0
+  var balance: Int = 0
 
   def startSyncSchedule(): Unit =
     Sponge.getScheduler.createTaskBuilder
