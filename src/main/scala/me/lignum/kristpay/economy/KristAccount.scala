@@ -32,6 +32,10 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
         return new KristTransferResult(to, this, currency, amount, contexts, ResultType.ACCOUNT_NO_FUNDS, TransactionTypes.TRANSFER)
       }
 
+      if (amount.intValue() < 0) {
+        return new KristTransferResult(to, this, currency, amount, contexts, ResultType.FAILED, TransactionTypes.TRANSFER)
+      }
+
       balance -= amount.intValue()
       target.balance += amount.intValue()
       KristPayPlugin.get.database.save()

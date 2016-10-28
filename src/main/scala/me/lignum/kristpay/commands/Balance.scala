@@ -10,10 +10,10 @@ import org.spongepowered.api.text.format.TextColors
 
 object Balance {
   val spec = CommandSpec.builder()
-                        .description(Text.of("Shows your balance."))
-                        .executor(new Balance)
-                        .permission("kristpay.command.balance")
-                        .build()
+    .description(Text.of("Shows your balance."))
+    .executor(new Balance)
+    .permission("kristpay.command.balance")
+    .build()
 }
 
 class Balance extends CommandExecutor {
@@ -30,18 +30,18 @@ class Balance extends CommandExecutor {
 
         src.sendMessage(
           Text.builder("You have " + balance.intValue() + " KST.")
-              .color(TextColors.GREEN)
-              .build()
+            .color(TextColors.GREEN)
+            .build()
         )
 
         CommandResult.builder()
-                     .queryResult(balance.intValue())
-                     .build()
+          .queryResult(balance.intValue())
+          .build()
       } else {
         src.sendMessage(
           Text.builder("Failed to find your account. Sorry!")
-              .color(TextColors.RED)
-              .build()
+            .color(TextColors.RED)
+            .build()
         )
 
         CommandResult.success()

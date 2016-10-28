@@ -13,14 +13,14 @@ import org.spongepowered.api.text.format.TextColors
 
 object SetBalance {
   val spec = CommandSpec.builder()
-                        .description(Text.of("Changes a player's balance."))
-                        .permission("kristpay.command.setbalance")
-                        .arguments(
-                          onlyOne(player(Text.of("target"))),
-                          onlyOne(integer(Text.of("balance")))
-                        )
-                        .executor(new SetBalance)
-                        .build()
+    .description(Text.of("Changes a player's balance."))
+    .permission("kristpay.command.setbalance")
+    .arguments(
+      onlyOne(player(Text.of("target"))),
+      onlyOne(integer(Text.of("balance")))
+    )
+    .executor(new SetBalance)
+    .build()
 }
 
 class SetBalance extends CommandExecutor {
@@ -31,8 +31,8 @@ class SetBalance extends CommandExecutor {
     if (!targetOpt.isPresent || !balanceOpt.isPresent) {
       src.sendMessage(
         Text.builder("Usage: /setbalance <player> <balance>")
-            .color(TextColors.RED)
-            .build()
+          .color(TextColors.RED)
+          .build()
       )
     } else {
       val target = targetOpt.get()
@@ -41,8 +41,8 @@ class SetBalance extends CommandExecutor {
       if (balance < 0) {
         src.sendMessage(
           Text.builder("The new balance can't be negative!")
-              .color(TextColors.RED)
-              .build()
+            .color(TextColors.RED)
+            .build()
         )
 
         return CommandResult.success()
@@ -62,18 +62,18 @@ class SetBalance extends CommandExecutor {
         if (result.getResult == ResultType.SUCCESS) {
           src.sendMessage(
             Text.builder("Successfully set the balance of " + target.getName + " to " + result.getAmount.intValue() + ".")
-                .color(TextColors.GREEN)
-                .build()
+              .color(TextColors.GREEN)
+              .build()
           )
 
           return CommandResult.builder()
-                              .queryResult(result.getAmount.intValue())
-                              .build()
+            .queryResult(result.getAmount.intValue())
+            .build()
         } else {
           src.sendMessage(
             Text.builder("Could not set the balance. Perhaps the master wallet is exhausted?")
-                .color(TextColors.RED)
-                .build()
+              .color(TextColors.RED)
+              .build()
           )
         }
       } else {
