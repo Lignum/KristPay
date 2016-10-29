@@ -9,7 +9,7 @@ import me.lignum.kristpay.economy.{KristCurrency, KristEconomy}
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.event.Listener
-import org.spongepowered.api.event.game.state.GameStartedServerEvent
+import org.spongepowered.api.event.game.state.{GameInitializationEvent, GamePreInitializationEvent}
 import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.service.economy.EconomyService
 
@@ -22,7 +22,7 @@ import org.spongepowered.api.service.economy.EconomyService
 class KristPayPlugin {
   KristPayPlugin.instance = this
 
-  val krist = new KristAPI(new URL("https://krist.ceriat.net"))
+  val krist = new KristAPI(new URL("http://krist.ceriat.net"))
   var logger: Logger = _
   val currency = new KristCurrency
 
@@ -37,19 +37,30 @@ class KristPayPlugin {
   def setLogger(lg: Logger) = logger = lg
 
   @Listener
-  def onServerStart(event: GameStartedServerEvent): Unit = {
+  def onPreInit(event: GamePreInitializationEvent): Unit = {
+    database = new Database(new File("kristpay.json"))
+    economyService = new KristEconomy
+    Sponge.getServiceManager.setProvider(this, classOf[EconomyService], economyService)
+  }
+
+  def fatalError(error: String, args: Any*): Unit = {
+    logger.error("FATAL: " + error, args)
+    failed = true
+  }
+
+  @Listener
+  def onInit(event: GameInitializationEvent): Unit = {
     krist.getMOTD({
       case Some(motd) =>
         logger.info("Krist is up! The message of the day is \"{}\".", motd)
 
-        database = new Database(new File("kristpay.json"))
         masterWallet = new MasterWallet(database.kwPassword)
 
         krist.doesAddressExist(masterWallet.address, {
           case Some(exists) =>
             if (!exists)
               fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
-              startPlugin()
+            startPlugin()
 
           case None =>
             fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
@@ -60,20 +71,12 @@ class KristPayPlugin {
     })
   }
 
-  def fatalError(error: String, args: Any*): Unit = {
-    logger.error("FATAL: " + error, args)
-    failed = true
-  }
-
   def startPlugin(): Unit = {
-    economyService = new KristEconomy
-    Sponge.getServiceManager.setProvider(this, classOf[EconomyService], economyService)
-
-    Sponge.getCommandManager.register(this, Balance.spec, "balance", "bal")
-    Sponge.getCommandManager.register(this, SetBalance.spec, "setbalance", "setbal")
-    Sponge.getCommandManager.register(this, Pay.spec, "pay", "transfer")
-
     if (!failed) {
+      Sponge.getCommandManager.register(this, Balance.spec, "balance", "bal")
+      Sponge.getCommandManager.register(this, SetBalance.spec, "setbalance", "setbal")
+      Sponge.getCommandManager.register(this, Pay.spec, "pay", "transfer")
+
       logger.info("Using master address \"{}\"!", masterWallet.address)
       masterWallet.startSyncSchedule()
     } else {

@@ -92,8 +92,16 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
 
   override def hasBalance(currency: Currency, contexts: util.Set[Context]): Boolean = true
 
-  override def withdraw(currency: Currency, amount: BigDecimal, cause: Cause, contexts: util.Set[Context]): TransactionResult =
-    setBalance(currency, BigDecimal.valueOf(Math.max(0, balance - amount.intValue())), cause, contexts)
+  override def withdraw(currency: Currency, amount: BigDecimal, cause: Cause, contexts: util.Set[Context]) = {
+    val amt = amount.intValue()
+    val newBalance = balance - amt
+
+    if (newBalance < 0) {
+      new KristTransactionResult(this, amount, contexts, ResultType.ACCOUNT_NO_FUNDS, TransactionTypes.WITHDRAW)
+    } else {
+      setBalance(currency, BigDecimal.valueOf(newBalance), cause, contexts)
+    }
+  }
 
   override def deposit(currency: Currency, amount: BigDecimal, cause: Cause, contexts: util.Set[Context]): TransactionResult =
     setBalance(currency, BigDecimal.valueOf(balance + amount.intValue()), cause, contexts)
