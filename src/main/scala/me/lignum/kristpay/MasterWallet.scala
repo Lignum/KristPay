@@ -25,4 +25,7 @@ class MasterWallet(val password: String) {
   }
 
   def allocate(amount: Int): Int = Math.min(balance + amount, balance)
+
+  def transfer(address: String, amount: Int, callback: Option[Boolean] => Unit) =
+    KristPayPlugin.get.krist.transfer(privateKey, address, amount, callback)
 }

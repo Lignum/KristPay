@@ -4,7 +4,7 @@ import java.io.File
 import java.net.URL
 
 import com.google.inject.Inject
-import me.lignum.kristpay.commands.{Balance, Pay, SetBalance}
+import me.lignum.kristpay.commands.{Balance, Pay, SetBalance, Withdraw}
 import me.lignum.kristpay.economy.{KristCurrency, KristEconomy}
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
@@ -76,6 +76,7 @@ class KristPayPlugin {
       Sponge.getCommandManager.register(this, Balance.spec, "balance", "bal")
       Sponge.getCommandManager.register(this, SetBalance.spec, "setbalance", "setbal")
       Sponge.getCommandManager.register(this, Pay.spec, "pay", "transfer")
+      Sponge.getCommandManager.register(this, Withdraw.spec, "withdraw")
 
       logger.info("Using master address \"{}\"!", masterWallet.address)
       masterWallet.startSyncSchedule()

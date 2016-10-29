@@ -62,6 +62,26 @@ object KristAPI {
 }
 
 class KristAPI(val node: URL) {
+  def transfer(pkey: String, address: String, amount: Int, callback: Option[Boolean] => Unit): Unit = {
+    val params = new JSONObject()
+    params.put("privatekey", pkey)
+    params.put("to", address)
+    params.put("amount", amount)
+
+    submitPost("transactions", params, {
+      case Some(body) =>
+        val json = new JSONObject(body)
+
+        if (json.optBoolean("ok", false)) {
+          callback(Some(true))
+        } else {
+          callback(Some(false))
+        }
+
+      case None => callback(None)
+    })
+  }
+
   def getBalance(address: String, callback: Option[Int] => Unit) =
     getAddressObject(address, {
       case Some(obj) =>
