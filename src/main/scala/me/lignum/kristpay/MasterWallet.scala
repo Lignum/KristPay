@@ -4,28 +4,29 @@ import java.util.concurrent.TimeUnit
 
 import org.spongepowered.api.Sponge
 
-class MasterWallet(val password: String) {
-  val privateKey: String = KristAPI.makePrivateKey(password)
-  val address: String = KristAPI.makeAddressV2(privateKey)
+class MasterWallet(password: String) extends Wallet(password) {
+  def isExhausted = KristPayPlugin.get.database.getTotalDistributedKrist >= balance
 
-  var balance: Int = 0
+  def isAlmostExhausted(threshold: Double) =
+    (KristPayPlugin.get.database.getTotalDistributedKrist.toDouble / balance.toDouble) >= threshold
 
   def startSyncSchedule(): Unit =
     Sponge.getScheduler.createTaskBuilder
       .async()
       .interval(5, TimeUnit.SECONDS)
-      .execute(_ => syncWithNode())
+      .execute(_ => syncWithNode(ok => {
+        if (!ok) {
+          KristPayPlugin.get.logger.warn("Could not sync master wallet with Krist node!")
+        } else {
+          if (isExhausted) {
+            KristPayPlugin.get.logger.warn("!!! The master wallet is exhausted !!!")
+          } else if (isAlmostExhausted(0.95)) {
+            KristPayPlugin.get.logger.warn(
+              "!! The master wallet is almost exhausted. " +
+              KristPayPlugin.get.database.getTotalDistributedKrist + " KST / " + balance + " KST used!"
+            )
+          }
+        }
+      }))
       .submit(KristPayPlugin.get)
-
-  def syncWithNode(): Unit = {
-    KristPayPlugin.get.krist.getBalance(address, {
-      case Some(bal) => balance = bal
-      case None => KristPayPlugin.get.logger.error("Failed to sync balance with the Krist node!!")
-    })
-  }
-
-  def allocate(amount: Int): Int = Math.min(balance + amount, balance)
-
-  def transfer(address: String, amount: Int, callback: Option[Boolean] => Unit) =
-    KristPayPlugin.get.krist.transfer(privateKey, address, amount, callback)
 }
