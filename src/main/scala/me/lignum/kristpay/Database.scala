@@ -9,6 +9,8 @@ import org.json.{JSONArray, JSONException, JSONObject}
 import scala.collection.mutable.ArrayBuffer
 
 class Database(dbFile: File) {
+  val floatingFunds = FloatingFunds(enabled = true, 3600, 15000)
+
   if (!dbFile.exists()) {
     try {
       dbFile.createNewFile()
@@ -17,7 +19,19 @@ class Database(dbFile: File) {
       d.put("accounts", new JSONArray())
 
       val config = new JSONObject()
+      // The master wallet's password.
       config.put("kwPassword", Utils.generateKWPassword(64))
+
+      // Floating funds settings
+      config.put("floatingEnabled", floatingFunds.enabled)
+
+      // Any deposits greater than this threshold will be divided up
+      // to be distributed over time.
+      config.put("floatingThreshold", floatingFunds.threshold)
+
+      // The time interval to distribute floating funds at.
+      config.put("floatingInterval", floatingFunds.interval)
+
       d.put("config", config)
 
       val pw = new PrintWriter(dbFile)
@@ -71,6 +85,10 @@ class Database(dbFile: File) {
         json.optJSONObject("config") match {
           case obj: JSONObject =>
             kwPassword = obj.optString("kwPassword", "0000")
+            floatingFunds.enabled = obj.optBoolean("floatingEnabled", false)
+            floatingFunds.interval = obj.optInt("floatingInterval", 3600)
+            floatingFunds.threshold = obj.optInt("floatingThreshold", 15000)
+
           case _ =>
         }
       }
@@ -102,6 +120,9 @@ class Database(dbFile: File) {
 
     val config = new JSONObject()
     config.put("kwPassword", kwPassword)
+    config.put("floatingEnabled", floatingFunds.enabled)
+    config.put("floatingThreshold", floatingFunds.threshold)
+    config.put("floatingInterval", floatingFunds.interval)
     json.put("config", config)
 
     val pw = new PrintWriter(dbFile)

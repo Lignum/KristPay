@@ -17,6 +17,7 @@ class KristAccount(
   var balance: Int = 0, val isUnique: Boolean = true
 ) extends UniqueAccount {
   var needsSave = false
+  var depositLock = false
 
   val depositWallet = deposit match {
     case Some(wallet) =>

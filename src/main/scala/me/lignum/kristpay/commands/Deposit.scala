@@ -24,7 +24,15 @@ class Deposit extends CommandExecutor {
       KristPayPlugin.get.database.accounts.find(_.owner.equals(uuid.toString)) match {
         case Some(acc) =>
           src.sendMessage(
-            Text.builder("Your deposit address is \"" + acc.depositWallet.address + "\".")
+            Text.builder(
+              "Your deposit address is \"" + acc.depositWallet.address + "\"." +
+                (
+                  if (KristPayPlugin.get.database.floatingFunds.enabled) {
+                    " You will not receive deposits instantly. Use /payout to see the next payout time."
+                  } else {
+                    ""
+                  }
+                ))
               .color(TextColors.GREEN)
               .build()
           )

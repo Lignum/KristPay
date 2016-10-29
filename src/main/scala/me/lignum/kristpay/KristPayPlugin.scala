@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 
 import com.google.inject.Inject
 import me.lignum.kristpay.commands._
-import me.lignum.kristpay.economy.{KristCurrency, KristEconomy}
+import me.lignum.kristpay.economy.{KristAccount, KristCurrency, KristEconomy}
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.event.Listener
@@ -35,6 +35,7 @@ class KristPayPlugin {
   var masterWallet: MasterWallet = _
 
   var economyService: KristEconomy = _
+  var nextPayoutTime: Long = System.currentTimeMillis()
 
   var failed = false
 
@@ -76,40 +77,75 @@ class KristPayPlugin {
     })
   }
 
-  def startDepositSchedule(): Unit = {
-    // oh man i am not proud of this
+  private def makeDeposit(acc: KristAccount, amount: Int, message: Int => String): Unit =
+    acc.depositWallet.transfer(masterWallet.address, amount, {
+      case Some(okk) => if (okk) {
+        acc.deposit(
+          currency, java.math.BigDecimal.valueOf(amount),
+          Cause.of(NamedCause.source(this)), null
+        )
+
+        acc.depositWallet.balance -= amount
+
+        if (acc.isUnique) {
+          // This is a player, let's send them a message.
+          Sponge.getServer.getPlayer(UUID.fromString(acc.owner)).ifPresent(ply => {
+            if (ply.isOnline) {
+              ply.sendMessage(
+                Text.builder(message(amount))
+                  .color(TextColors.GREEN)
+                  .build()
+              )
+            }
+          })
+        }
+      }
+
+      case None =>
+    })
+
+  def startFloatingDepositSchedule(): Unit = {
     Sponge.getScheduler.createTaskBuilder()
-      .async()
+      .interval(database.floatingFunds.interval, TimeUnit.SECONDS)
+      .execute(_ => {
+        database.accounts.foreach(acc => {
+          acc.depositWallet.syncWithNode(ok => if (ok) {
+            if (acc.depositWallet.balance > 0) {
+              val depositAmount = Math.min(acc.depositWallet.balance, database.floatingFunds.threshold)
+              makeDeposit(
+                acc, depositAmount,
+                amt => {
+                  val nextDepositAmount = Math.min(acc.depositWallet.balance, database.floatingFunds.threshold)
+                  amt + " KST " + (if (amt > 1) "have" else "has") + " been deposited to your account." +
+                    (
+                      if (nextDepositAmount > 0) {
+                        " You will receive " + nextDepositAmount + " KST (out of " + acc.depositWallet.balance + " KST)" +
+                          " in " + database.floatingFunds.interval + "s."
+                      } else {
+                        ""
+                      }
+                    )
+                }
+              )
+            }
+          })
+        })
+
+        nextPayoutTime = System.currentTimeMillis() + (database.floatingFunds.interval * 1000L)
+      })
+      .submit(this)
+  }
+
+  def startDepositSchedule(): Unit = {
+    Sponge.getScheduler.createTaskBuilder()
       .interval(5, TimeUnit.SECONDS)
       .execute(_ => database.accounts.foreach(acc => {
         acc.depositWallet.syncWithNode(ok => if (ok) {
           if (acc.depositWallet.balance > 0) {
-            val depositAmount = acc.depositWallet.balance
-
-            acc.depositWallet.transfer(masterWallet.address, depositAmount, {
-              case Some(okk) => if (okk) {
-                acc.deposit(
-                  currency, java.math.BigDecimal.valueOf(depositAmount),
-                  Cause.of(NamedCause.source(this)), null
-                )
-
-                if (acc.isUnique) {
-                  // This is a player, let's send them a message.
-                  Sponge.getServer.getPlayer(UUID.fromString(acc.owner)).ifPresent(ply => {
-                    if (ply.isOnline) {
-                      val have = if (depositAmount > 1) "have" else "has"
-                      ply.sendMessage(
-                        Text.builder(depositAmount + " KST " + have + " been deposited to your account!")
-                          .color(TextColors.GREEN)
-                          .build()
-                      )
-                    }
-                  })
-                }
-              }
-
-              case None =>
-            })
+            makeDeposit(
+              acc, acc.depositWallet.balance,
+              amt => amt + " KST " + (if (amt > 1) "have" else "has") + " been deposited to your account."
+            )
           }
         })
       }))
@@ -128,10 +164,16 @@ class KristPayPlugin {
       Sponge.getCommandManager.register(this, Pay.spec, "pay", "transfer")
       Sponge.getCommandManager.register(this, Withdraw.spec, "withdraw")
       Sponge.getCommandManager.register(this, Deposit.spec, "deposit")
+      Sponge.getCommandManager.register(this, Payout.spec, "payout", "nextpayout")
 
       logger.info("Using master address \"{}\"!", masterWallet.address)
       masterWallet.startSyncSchedule()
-      startDepositSchedule()
+
+      if (database.floatingFunds.enabled) {
+        startFloatingDepositSchedule()
+      } else {
+        startDepositSchedule()
+      }
     } else {
       logger.error("Can't start KristPay due to a fatal error.")
     }
