@@ -79,26 +79,26 @@ class KristPayPlugin {
 
   private def makeDeposit(acc: KristAccount, amount: Int, message: Int => String): Unit =
     acc.depositWallet.transfer(masterWallet.address, amount, {
-      case Some(okk) => if (okk) {
-        acc.deposit(
-          currency, java.math.BigDecimal.valueOf(amount),
-          Cause.of(NamedCause.source(this)), null
-        )
+      case Some(ok) => if (ok) {
+        masterWallet.syncWithNode(okk => if (okk) {
+          acc.deposit(
+            currency, java.math.BigDecimal.valueOf(amount),
+            Cause.of(NamedCause.source(this)), null
+          )
 
-        acc.depositWallet.balance -= amount
-
-        if (acc.isUnique) {
-          // This is a player, let's send them a message.
-          Sponge.getServer.getPlayer(UUID.fromString(acc.owner)).ifPresent(ply => {
-            if (ply.isOnline) {
-              ply.sendMessage(
-                Text.builder(message(amount))
-                  .color(TextColors.GREEN)
-                  .build()
-              )
-            }
-          })
-        }
+          if (acc.isUnique) {
+            // This is a player, let's send them a message.
+            Sponge.getServer.getPlayer(UUID.fromString(acc.owner)).ifPresent(ply => {
+              if (ply.isOnline) {
+                ply.sendMessage(
+                  Text.builder(message(amount))
+                    .color(TextColors.GREEN)
+                    .build()
+                )
+              }
+            })
+          }
+        })
       }
 
       case None =>
@@ -115,16 +115,20 @@ class KristPayPlugin {
               makeDeposit(
                 acc, depositAmount,
                 amt => {
-                  val nextDepositAmount = Math.min(acc.depositWallet.balance, database.floatingFunds.threshold)
-                  amt + " KST " + (if (amt > 1) "have" else "has") + " been deposited to your account." +
-                    (
-                      if (nextDepositAmount > 0) {
-                        " You will receive " + nextDepositAmount + " KST (out of " + acc.depositWallet.balance + " KST)" +
-                          " in " + database.floatingFunds.interval + "s."
-                      } else {
-                        ""
-                      }
-                    )
+                  val newDepositBalance = acc.depositWallet.balance - depositAmount
+                  val nextDepositAmount =
+                    Math.min(newDepositBalance, database.floatingFunds.threshold)
+
+                  val have = if (amt > 1) "have" else "has"
+                  val base = amt + " KST " + have + " been deposited to your account."
+
+                  if (nextDepositAmount > 0) {
+                    base +
+                      " You will receive " + nextDepositAmount + " KST (out of " + newDepositBalance + " KST)" +
+                      " in " + database.floatingFunds.interval + "s."
+                  } else {
+                    base
+                  }
                 }
               )
             }

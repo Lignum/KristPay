@@ -41,9 +41,9 @@ class Withdraw extends CommandExecutor {
         val address = addressOpt.get()
         val amount = amountOpt.get()
 
-        if (amount < 0) {
+        if (amount <= 0) {
           src.sendMessage(
-            Text.builder("You can't withdraw a negative amount of money!")
+            Text.builder("You must withdraw more than 0 KST!")
               .color(TextColors.RED)
               .build()
           )

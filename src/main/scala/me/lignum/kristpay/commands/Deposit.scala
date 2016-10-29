@@ -41,7 +41,7 @@ class Deposit extends CommandExecutor {
 
         case None =>
           src.sendMessage(
-            Text.builder("Failed to find your account. Sorry!")
+            Text.builder("You do not have an account. Use /balance to create one.")
               .color(TextColors.RED)
               .build()
           )
