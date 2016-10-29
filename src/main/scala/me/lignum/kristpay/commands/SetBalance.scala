@@ -61,13 +61,13 @@ class SetBalance extends CommandExecutor {
 
         if (result.getResult == ResultType.SUCCESS) {
           src.sendMessage(
-            Text.builder("Successfully set the balance of " + target.getName + " to " + result.getAmount.intValue() + ".")
+            Text.builder("Successfully set the balance of " + target.getName + " to " + balance + ".")
               .color(TextColors.GREEN)
               .build()
           )
 
           return CommandResult.builder()
-            .queryResult(result.getAmount.intValue())
+            .queryResult(balance)
             .build()
         } else {
           src.sendMessage(
