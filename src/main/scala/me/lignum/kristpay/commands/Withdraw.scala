@@ -41,6 +41,16 @@ class Withdraw extends CommandExecutor {
         val address = addressOpt.get()
         val amount = amountOpt.get()
 
+        if (amount < 0) {
+          src.sendMessage(
+            Text.builder("You can't withdraw a negative amount of money!")
+              .color(TextColors.RED)
+              .build()
+          )
+
+          return CommandResult.success()
+        }
+
         if (!address.matches("^(?:[a-f0-9]{10}|k[a-z0-9]{9})$")) {
           src.sendMessage(
             Text.builder("\"" + address + "\" is not a valid Krist address!")

@@ -4,7 +4,7 @@ import java.math.BigDecimal
 import java.util
 import java.util.UUID
 
-import me.lignum.kristpay.KristPayPlugin
+import me.lignum.kristpay.{KristPayPlugin, Utils, Wallet}
 import org.spongepowered.api.event.cause.Cause
 import org.spongepowered.api.service.context.Context
 import org.spongepowered.api.service.economy.Currency
@@ -12,7 +12,22 @@ import org.spongepowered.api.service.economy.account.{Account, UniqueAccount}
 import org.spongepowered.api.service.economy.transaction._
 import org.spongepowered.api.text.Text
 
-class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccount {
+class KristAccount(
+  val owner: String, deposit: Option[Wallet] = None,
+  var balance: Int = 0, val isUnique: Boolean = true
+) extends UniqueAccount {
+  var needsSave = false
+
+  val depositWallet = deposit match {
+    case Some(wallet) =>
+      needsSave = false
+      wallet
+
+    case None =>
+      needsSave = true
+      new Wallet(owner + Utils.generateKWPassword(64))
+  }
+
   override def getDisplayName: Text = Text.of(owner)
 
   override def getBalances(contexts: util.Set[Context]): util.Map[Currency, BigDecimal] = {
@@ -67,16 +82,16 @@ class KristAccount(val owner: String, var balance: Int = 0) extends UniqueAccoun
       } else {
         balance = amount.intValue()
         KristPayPlugin.get.database.save()
-        new KristTransactionResult(this, amount, contexts, ResultType.SUCCESS, TransactionTypes.DEPOSIT)
+        new KristTransactionResult(this, BigDecimal.valueOf(increase), contexts, ResultType.SUCCESS, TransactionTypes.DEPOSIT)
       }
     } else if (delta > 0) {
       // Decrease in balance, no problem here.
       balance = amount.intValue()
       KristPayPlugin.get.database.save()
-      new KristTransactionResult(this, amount, contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW)
+      new KristTransactionResult(this, BigDecimal.valueOf(Math.abs(delta)), contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW)
     } else {
       // No change in balance.
-      new KristTransactionResult(this, amount, contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW)
+      new KristTransactionResult(this, BigDecimal.valueOf(0), contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW)
     }
   }
 

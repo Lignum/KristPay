@@ -2,7 +2,6 @@ package me.lignum.kristpay
 
 import java.io.{File, PrintWriter}
 import java.util.Scanner
-import java.util.concurrent.ThreadLocalRandom
 
 import me.lignum.kristpay.economy.KristAccount
 import org.json.{JSONArray, JSONException, JSONObject}
@@ -18,7 +17,7 @@ class Database(dbFile: File) {
       d.put("accounts", new JSONArray())
 
       val config = new JSONObject()
-      config.put("kwPassword", generatePassword(64))
+      config.put("kwPassword", Utils.generateKWPassword(64))
       d.put("config", config)
 
       val pw = new PrintWriter(dbFile)
@@ -27,18 +26,6 @@ class Database(dbFile: File) {
     } catch {
       case t: Throwable => KristPayPlugin.get.logger.error("Failed to create " + dbFile.getAbsolutePath, t)
     }
-  }
-
-  private def generatePassword(length: Int): String = {
-    val rand = ThreadLocalRandom.current()
-    var pw = ""
-
-    for (i <- 0 until length) {
-      val j = rand.nextInt(33, 127)
-      pw += j.toChar
-    }
-
-    pw
   }
 
   val accounts = ArrayBuffer[KristAccount]()
@@ -64,7 +51,15 @@ class Database(dbFile: File) {
           case a: JSONArray =>
             for (i <- 0 until a.length()) {
               a.optJSONObject(i) match {
-                case obj: JSONObject => accounts += new KristAccount(obj.optString("owner", ""), obj.optInt("balance", 0))
+                case obj: JSONObject =>
+                  val depositWallet = obj.optString("depositPassword") match {
+                    case pw: String => Some(new Wallet(pw))
+                    case _ => None
+                  }
+
+                  accounts += new KristAccount(
+                    obj.optString("owner", ""), depositWallet, obj.optInt("balance", 0)
+                  )
                 case _ =>
               }
             }
@@ -81,9 +76,13 @@ class Database(dbFile: File) {
       }
     } catch {
       case e: JSONException =>
-        KristPayPlugin.instance.logger.error("Failed to parse {}: {}", dbFile.getName.asInstanceOf[Any], e.getMessage.asInstanceOf[Any])
+        KristPayPlugin.get.logger.error("Failed to parse {}: {}", dbFile.getName.asInstanceOf[Any], e.getMessage.asInstanceOf[Any])
       case t: Throwable =>
-        KristPayPlugin.instance.logger.info("Error while parsing kristpay config", t)
+        KristPayPlugin.get.logger.info("Error while parsing kristpay config", t)
+    }
+
+    if (accounts.foldLeft(false) { (a, b) => a || b.needsSave }) {
+      save()
     }
   }
 
@@ -95,6 +94,7 @@ class Database(dbFile: File) {
       val obj = new JSONObject()
       obj.put("owner", acc.owner)
       obj.put("balance", acc.balance)
+      obj.put("depositPassword", acc.depositWallet.password)
       accs.put(obj)
     })
 
@@ -105,7 +105,7 @@ class Database(dbFile: File) {
     json.put("config", config)
 
     val pw = new PrintWriter(dbFile)
-    pw.write(json.toString())
+    pw.write(json.toString(4))
     pw.close()
   }
 
