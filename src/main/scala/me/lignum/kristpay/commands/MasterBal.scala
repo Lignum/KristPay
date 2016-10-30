@@ -29,7 +29,7 @@ class MasterBal extends CommandExecutor {
 
     src.sendMessage(
       Text.builder(msg)
-        .color(TextColors.GREEN)
+        .color(TextColors.BLUE)
         .build()
     )
 

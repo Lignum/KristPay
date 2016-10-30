@@ -22,7 +22,7 @@ class Payout extends CommandExecutor {
 
     src.sendMessage(
       Text.builder("The next payout will be in " + nextTime + "s.")
-        .color(TextColors.GREEN)
+        .color(TextColors.BLUE)
         .build()
     )
 

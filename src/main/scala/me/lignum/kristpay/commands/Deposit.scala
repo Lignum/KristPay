@@ -23,17 +23,20 @@ class Deposit extends CommandExecutor {
 
       KristPayPlugin.get.database.accounts.find(_.owner.equals(uuid.toString)) match {
         case Some(acc) =>
+          var msg = "Your deposit address is \"" + acc.depositWallet.address + "\"."
+
+          if (KristPayPlugin.get.database.floatingFunds.enabled) {
+            msg += " You will not receive deposits instantly. Use /payout to see the next payout time."
+          }
+
+          if (KristPayPlugin.get.database.taxes.enabled) {
+            val depositTaxPerct = Math.round(KristPayPlugin.get.database.taxes.depositMultiplier * 100.0).toInt
+            msg += " There will be a " + depositTaxPerct + "% tax on all deposits."
+          }
+
           src.sendMessage(
-            Text.builder(
-              "Your deposit address is \"" + acc.depositWallet.address + "\"." +
-                (
-                  if (KristPayPlugin.get.database.floatingFunds.enabled) {
-                    " You will not receive deposits instantly. Use /payout to see the next payout time."
-                  } else {
-                    ""
-                  }
-                ))
-              .color(TextColors.GREEN)
+            Text.builder(msg)
+              .color(TextColors.BLUE)
               .build()
           )
 

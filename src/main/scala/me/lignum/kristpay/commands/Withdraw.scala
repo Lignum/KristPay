@@ -46,13 +46,13 @@ class Withdraw extends CommandExecutor {
           0
         }
 
+        val taxedAmount = amount - taxAmount
+
         val minimumAmount = if (KristPayPlugin.get.database.taxes.enabled) {
           Math.floor(1.0 / (1.0 - KristPayPlugin.get.database.taxes.withdrawMultiplier)).toInt
         } else {
           1
         }
-
-        val taxedAmount = amount - taxAmount
 
         if (amount < 1 || (amount >= 0 && taxedAmount < 1)) {
           src.sendMessage(
@@ -81,7 +81,7 @@ class Withdraw extends CommandExecutor {
           if (accountOpt.isPresent) {
             val account = accountOpt.get
             val result = account.withdraw(
-              KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(taxedAmount), Cause.of(NamedCause.simulated(player))
+              KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(amount), Cause.of(NamedCause.simulated(player))
             )
 
             result.getResult match {
@@ -92,9 +92,9 @@ class Withdraw extends CommandExecutor {
                   case Some(ok) =>
                     if (ok) {
                       val withdrawMsg = if (KristPayPlugin.get.database.taxes.enabled) {
-                        "Successfully withdrawn " + result.getAmount + " KST (" + amount + " KST - " + taxAmount + " KST tax)."
+                        "Successfully withdrawn " + taxedAmount + " KST (" + amount + " KST - " + taxAmount + " KST tax)."
                       } else {
-                        "Successfully withdrawn " + result.getAmount + " KST."
+                        "Successfully withdrawn " + taxedAmount + " KST."
                       }
 
                       src.sendMessage(

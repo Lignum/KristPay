@@ -92,12 +92,20 @@ class KristPayPlugin {
     })
   }
 
-  private def makeDeposit(acc: KristAccount, amount: Int, message: Int => String): Unit =
+  private def makeDeposit(acc: KristAccount, amount: Int, message: (Int, Int, Int) => String): Unit =
     acc.depositWallet.transfer(masterWallet.address, amount, {
       case Some(ok) => if (ok) {
         masterWallet.syncWithNode(okk => if (okk) {
+          val taxAmount = if (KristPayPlugin.get.database.taxes.enabled) {
+            Math.floor(Math.max(1.0, amount.toDouble * KristPayPlugin.get.database.taxes.withdrawMultiplier)).toInt
+          } else {
+            0
+          }
+
+          val taxedAmount = amount - taxAmount
+
           acc.deposit(
-            currency, java.math.BigDecimal.valueOf(amount),
+            currency, java.math.BigDecimal.valueOf(taxedAmount),
             Cause.of(NamedCause.source(this)), null
           )
 
@@ -106,7 +114,7 @@ class KristPayPlugin {
             Sponge.getServer.getPlayer(UUID.fromString(acc.owner)).ifPresent(ply => {
               if (ply.isOnline) {
                 ply.sendMessage(
-                  Text.builder(message(amount))
+                  Text.builder(message(amount, taxedAmount, taxAmount))
                     .color(TextColors.GREEN)
                     .build()
                 )
@@ -129,13 +137,17 @@ class KristPayPlugin {
               val depositAmount = Math.min(acc.depositWallet.balance, database.floatingFunds.threshold)
               makeDeposit(
                 acc, depositAmount,
-                amt => {
+                (amt, taxedAmt, tax) => {
                   val newDepositBalance = acc.depositWallet.balance - depositAmount
                   val nextDepositAmount =
                     Math.min(newDepositBalance, database.floatingFunds.threshold)
 
                   val have = if (amt > 1) "have" else "has"
-                  val base = amt + " KST " + have + " been deposited to your account."
+                  val base = if (!KristPayPlugin.get.database.taxes.enabled) {
+                    amt + " KST " + have + " been deposited to your account."
+                  } else {
+                    taxedAmt + " KST (" + amt + " KST - " + tax + " KST tax) " + have + " been deposited to your account."
+                  }
 
                   if (nextDepositAmount > 0) {
                     base +
@@ -163,7 +175,14 @@ class KristPayPlugin {
           if (acc.depositWallet.balance > 0) {
             makeDeposit(
               acc, acc.depositWallet.balance,
-              amt => amt + " KST " + (if (amt > 1) "have" else "has") + " been deposited to your account."
+              (amt, taxedAmt, tax) => {
+                val have = if (amt > 1) "have" else "has"
+                if (!KristPayPlugin.get.database.taxes.enabled) {
+                  amt + " KST " + have + " been deposited to your account."
+                } else {
+                  taxedAmt + " KST (" + amt + " KST - " + tax + " KST tax) " + have + " been deposited to your account."
+                }
+              }
             )
           }
         })
