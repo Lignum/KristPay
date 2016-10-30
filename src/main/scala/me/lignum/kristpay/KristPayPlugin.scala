@@ -97,7 +97,7 @@ class KristPayPlugin {
       case Some(ok) => if (ok) {
         masterWallet.syncWithNode(okk => if (okk) {
           val taxAmount = if (KristPayPlugin.get.database.taxes.enabled) {
-            Math.floor(Math.max(1.0, amount.toDouble * KristPayPlugin.get.database.taxes.withdrawMultiplier)).toInt
+            Math.floor(Math.max(1.0, amount.toDouble * KristPayPlugin.get.database.taxes.depositMultiplier)).toInt
           } else {
             0
           }
