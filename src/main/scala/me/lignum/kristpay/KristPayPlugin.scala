@@ -184,12 +184,13 @@ class KristPayPlugin {
       Sponge.getCommandManager.register(this, Pay.spec, "pay", "transfer")
       Sponge.getCommandManager.register(this, Withdraw.spec, "withdraw")
       Sponge.getCommandManager.register(this, Deposit.spec, "deposit")
-      Sponge.getCommandManager.register(this, Payout.spec, "payout", "nextpayout")
+      Sponge.getCommandManager.register(this, MasterBal.spec, "masterbalance", "masterbal")
 
       logger.info("Using master address \"{}\"!", masterWallet.address)
       masterWallet.startSyncSchedule()
 
       if (database.floatingFunds.enabled) {
+        Sponge.getCommandManager.register(this, Payout.spec, "payout", "nextpayout")
         startFloatingDepositSchedule()
       } else {
         startDepositSchedule()

@@ -134,7 +134,6 @@ class KristAccount(
   }
 
   override def deposit(currency: Currency, amount: BigDecimal, cause: Cause, contexts: util.Set[Context]): TransactionResult = {
-    KristPayPlugin.get.logger.info("deposit(" + amount.intValue() + ") -> setBalance(" + (balance + amount.intValue()) + ")")
     setBalance(currency, BigDecimal.valueOf(balance + amount.intValue()), cause, contexts)
   }
 
