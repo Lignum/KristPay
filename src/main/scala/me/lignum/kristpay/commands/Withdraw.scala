@@ -40,10 +40,23 @@ class Withdraw extends CommandExecutor {
       } else {
         val address = addressOpt.get()
         val amount = amountOpt.get()
+        val taxAmount = if (KristPayPlugin.get.database.taxes.enabled) {
+          Math.floor(Math.max(1.0, amount.toDouble * KristPayPlugin.get.database.taxes.withdrawMultiplier)).toInt
+        } else {
+          0
+        }
 
-        if (amount <= 0) {
+        val minimumAmount = if (KristPayPlugin.get.database.taxes.enabled) {
+          Math.floor(1.0 / (1.0 - KristPayPlugin.get.database.taxes.withdrawMultiplier)).toInt
+        } else {
+          1
+        }
+
+        val taxedAmount = amount - taxAmount
+
+        if (amount < 1 || (amount >= 0 && taxedAmount < 1)) {
           src.sendMessage(
-            Text.builder("You must withdraw more than 0 KST!")
+            Text.builder("You need to withdraw at least " + minimumAmount + " KST.")
               .color(TextColors.RED)
               .build()
           )
@@ -68,18 +81,24 @@ class Withdraw extends CommandExecutor {
           if (accountOpt.isPresent) {
             val account = accountOpt.get
             val result = account.withdraw(
-              KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(amount), Cause.of(NamedCause.simulated(player))
+              KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(taxedAmount), Cause.of(NamedCause.simulated(player))
             )
 
             result.getResult match {
               case ResultType.SUCCESS =>
                 val master = KristPayPlugin.get.masterWallet
 
-                master.transfer(address, amount, {
+                master.transfer(address, taxedAmount, {
                   case Some(ok) =>
                     if (ok) {
+                      val withdrawMsg = if (KristPayPlugin.get.database.taxes.enabled) {
+                        "Successfully withdrawn " + result.getAmount + " KST (" + amount + " KST - " + taxAmount + " KST tax)."
+                      } else {
+                        "Successfully withdrawn " + result.getAmount + " KST."
+                      }
+
                       src.sendMessage(
-                        Text.builder("Successfully withdrawn " + result.getAmount + " KST!")
+                        Text.builder(withdrawMsg)
                             .color(TextColors.GREEN)
                             .build()
                       )

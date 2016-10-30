@@ -10,6 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class Database(dbFile: File) {
   val floatingFunds = FloatingFunds(enabled = true, 3600, 15000)
+  val taxes = Taxes(enabled = true, 0.08, 0.05)
 
   if (!dbFile.exists()) {
     try {
@@ -31,6 +32,16 @@ class Database(dbFile: File) {
 
       // The time interval to distribute floating funds at.
       config.put("floatingInterval", floatingFunds.interval)
+
+      // Taxes settings
+      // If enabled, will tax players on deposits and withdraws,
+      // which go towards the master wallet.
+      config.put("taxesEnabled", taxes.enabled)
+
+      // The value to multiply a value by to get the absolute amount of taxes.
+      // valueInclTaxes = value - value * taxMultiplier
+      config.put("taxesDepositMultiplier", taxes.depositMultiplier)
+      config.put("taxesWithdrawMultiplier", taxes.withdrawMultiplier)
 
       d.put("config", config)
 
@@ -85,9 +96,14 @@ class Database(dbFile: File) {
         json.optJSONObject("config") match {
           case obj: JSONObject =>
             kwPassword = obj.optString("kwPassword", "0000")
+
             floatingFunds.enabled = obj.optBoolean("floatingEnabled", false)
             floatingFunds.interval = obj.optInt("floatingInterval", 3600)
             floatingFunds.threshold = obj.optInt("floatingThreshold", 15000)
+
+            taxes.enabled = obj.optBoolean("taxesEnabled", true)
+            taxes.depositMultiplier = obj.optDouble("taxesDepositMultiplier", 0.05)
+            taxes.withdrawMultiplier = obj.optDouble("taxesWithdrawMultiplier", 0.05)
 
           case _ =>
         }
@@ -120,9 +136,15 @@ class Database(dbFile: File) {
 
     val config = new JSONObject()
     config.put("kwPassword", kwPassword)
+
     config.put("floatingEnabled", floatingFunds.enabled)
     config.put("floatingThreshold", floatingFunds.threshold)
     config.put("floatingInterval", floatingFunds.interval)
+
+    config.put("taxesEnabled", taxes.enabled)
+    config.put("taxesDepositMultiplier", taxes.depositMultiplier)
+    config.put("taxesWithdrawMultiplier", taxes.withdrawMultiplier)
+
     json.put("config", config)
 
     val pw = new PrintWriter(dbFile)
