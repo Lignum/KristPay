@@ -4,7 +4,7 @@ import java.math.BigDecimal
 import java.util
 import java.util.UUID
 
-import me.lignum.kristpay.{KristPayPlugin, Utils, Wallet}
+import me.lignum.kristpay.{KristPay, Utils, Wallet}
 import org.spongepowered.api.event.cause.Cause
 import org.spongepowered.api.service.context.Context
 import org.spongepowered.api.service.economy.Currency
@@ -33,7 +33,7 @@ class KristAccount(
 
   override def getBalances(contexts: util.Set[Context]): util.Map[Currency, BigDecimal] = {
     val bals = new util.HashMap[Currency, BigDecimal]()
-    bals.put(KristPayPlugin.instance.currency, getBalance(KristPayPlugin.instance.currency))
+    bals.put(KristPay.instance.currency, getBalance(KristPay.instance.currency))
     bals
   }
 
@@ -46,24 +46,24 @@ class KristAccount(
     case target: KristAccount =>
       val baseTxLogString = owner + " - " + amount.intValue() + " -> " + target.owner + " (caused by " + cause.toString + ")"
       if (balance - amount.intValue() < 0) {
-        KristPayPlugin.get.logTransaction(baseTxLogString + " => Failed (no funds)")
+        KristPay.get.logTransaction(baseTxLogString + " => Failed (no funds)")
         return new KristTransferResult(to, this, currency, amount, contexts, ResultType.ACCOUNT_NO_FUNDS, TransactionTypes.TRANSFER)
       }
 
       if (amount.intValue() < 0) {
-        KristPayPlugin.get.logTransaction(baseTxLogString + " => Failed (amount < 0)")
+        KristPay.get.logTransaction(baseTxLogString + " => Failed (amount < 0)")
         return new KristTransferResult(to, this, currency, amount, contexts, ResultType.FAILED, TransactionTypes.TRANSFER)
       }
 
       balance -= amount.intValue()
       target.balance += amount.intValue()
-      KristPayPlugin.get.database.save()
-      KristPayPlugin.get.logTransaction(baseTxLogString + " => Success")
+      KristPay.get.database.save()
+      KristPay.get.logTransaction(baseTxLogString + " => Success")
       new KristTransferResult(to, this, currency, amount, contexts, ResultType.SUCCESS, TransactionTypes.TRANSFER)
 
     case _ =>
       val baseTxLogString = owner + " - " + amount.intValue() + " -> ???"
-      KristPayPlugin.get.logTransaction(baseTxLogString + " => Failed (target not a krist account)")
+      KristPay.get.logTransaction(baseTxLogString + " => Failed (target not a krist account)")
       new KristTransferResult(to, this, currency, amount, contexts, ResultType.FAILED, TransactionTypes.TRANSFER)
   }
 
@@ -72,7 +72,7 @@ class KristAccount(
 
     if (amount.intValue() < 0) {
       // Balance should never be negative.
-      KristPayPlugin.get.logTransaction(baseTxLogString + " => Failed (negative balance)")
+      KristPay.get.logTransaction(baseTxLogString + " => Failed (negative balance)")
       return new KristTransactionResult(this, amount, contexts, ResultType.FAILED, TransactionTypes.WITHDRAW)
     }
 
@@ -80,32 +80,32 @@ class KristAccount(
 
     if (delta < 0) {
       // Increase in balance, check if the master wallet can fund this.
-      val masterBal = KristPayPlugin.get.masterWallet.balance
-      val used = KristPayPlugin.get.database.getTotalDistributedKrist
+      val masterBal = KristPay.get.masterWallet.balance
+      val used = KristPay.get.database.getTotalDistributedKrist
 
       val available = masterBal - used
       val increase = Math.abs(delta)
 
       if (increase > available) {
         // Not enough funds.
-        KristPayPlugin.get.logTransaction(baseTxLogString + " => Failed (master wallet can't fund this)")
+        KristPay.get.logTransaction(baseTxLogString + " => Failed (master wallet can't fund this)")
         new KristTransactionResult(this, BigDecimal.valueOf(0), contexts, ResultType.FAILED, TransactionTypes.DEPOSIT)
       } else {
         balance = amount.intValue()
-        KristPayPlugin.get.database.save()
-        KristPayPlugin.get.logTransaction(baseTxLogString + " => Success (deposit " + increase + " KST)")
+        KristPay.get.database.save()
+        KristPay.get.logTransaction(baseTxLogString + " => Success (deposit " + increase + " KST)")
         new KristTransactionResult(this, BigDecimal.valueOf(increase), contexts, ResultType.SUCCESS, TransactionTypes.DEPOSIT)
       }
     } else if (delta > 0) {
       // Decrease in balance, no problem here.
       val decrease = Math.abs(delta)
       balance = amount.intValue()
-      KristPayPlugin.get.database.save()
-      KristPayPlugin.get.logTransaction(baseTxLogString + " => Success (withdraw " + decrease + " KST)")
+      KristPay.get.database.save()
+      KristPay.get.logTransaction(baseTxLogString + " => Success (withdraw " + decrease + " KST)")
       new KristTransactionResult(this, BigDecimal.valueOf(Math.abs(delta)), contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW)
     } else {
       // No change in balance.
-      KristPayPlugin.get.logTransaction(baseTxLogString + " => Success (no change)")
+      KristPay.get.logTransaction(baseTxLogString + " => Success (no change)")
       new KristTransactionResult(this, BigDecimal.valueOf(0), contexts, ResultType.SUCCESS, TransactionTypes.WITHDRAW)
     }
   }
@@ -113,10 +113,10 @@ class KristAccount(
   override def getDefaultBalance(currency: Currency): BigDecimal = BigDecimal.ZERO
 
   override def resetBalances(cause: Cause, contexts: util.Set[Context]): util.Map[Currency, TransactionResult] = {
-    val result = resetBalance(KristPayPlugin.instance.currency, cause, contexts)
+    val result = resetBalance(KristPay.instance.currency, cause, contexts)
 
     val map = new util.HashMap[Currency, TransactionResult]()
-    map.put(KristPayPlugin.instance.currency, result)
+    map.put(KristPay.instance.currency, result)
     map
   }
 

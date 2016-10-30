@@ -3,7 +3,7 @@ package me.lignum.kristpay.economy
 import java.math.BigDecimal
 import java.util
 
-import me.lignum.kristpay.KristPayPlugin
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.service.context.Context
 import org.spongepowered.api.service.economy.Currency
 import org.spongepowered.api.service.economy.account.Account
@@ -16,7 +16,7 @@ class KristTransactionResult(
 
   override def getAmount: BigDecimal = amt
 
-  override def getCurrency: Currency = KristPayPlugin.get.currency
+  override def getCurrency: Currency = KristPay.get.currency
 
   override def getContexts: util.Set[Context] = ctx
 

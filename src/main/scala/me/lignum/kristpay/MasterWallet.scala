@@ -5,10 +5,10 @@ import java.util.concurrent.TimeUnit
 import org.spongepowered.api.Sponge
 
 class MasterWallet(password: String) extends Wallet(password) {
-  def isExhausted = KristPayPlugin.get.database.getTotalDistributedKrist >= balance
+  def isExhausted = KristPay.get.database.getTotalDistributedKrist >= balance
 
   def isAlmostExhausted(threshold: Double) =
-    (KristPayPlugin.get.database.getTotalDistributedKrist.toDouble / balance.toDouble) >= threshold
+    (KristPay.get.database.getTotalDistributedKrist.toDouble / balance.toDouble) >= threshold
 
   def startSyncSchedule(): Unit =
     Sponge.getScheduler.createTaskBuilder
@@ -16,17 +16,17 @@ class MasterWallet(password: String) extends Wallet(password) {
       .interval(5, TimeUnit.SECONDS)
       .execute(_ => syncWithNode(ok => {
         if (!ok) {
-          KristPayPlugin.get.logger.warn("Could not sync master wallet with Krist node!")
+          KristPay.get.logger.warn("Could not sync master wallet with Krist node!")
         } else {
           if (isExhausted) {
-            KristPayPlugin.get.logger.warn("!!! The master wallet is exhausted !!!")
+            KristPay.get.logger.warn("!!! The master wallet is exhausted !!!")
           } else if (isAlmostExhausted(0.95)) {
-            KristPayPlugin.get.logger.warn(
+            KristPay.get.logger.warn(
               "!! The master wallet is almost exhausted. " +
-              KristPayPlugin.get.database.getTotalDistributedKrist + " KST / " + balance + " KST used!"
+              KristPay.get.database.getTotalDistributedKrist + " KST / " + balance + " KST used!"
             )
           }
         }
       }))
-      .submit(KristPayPlugin.get)
+      .submit(KristPay.get)
 }

@@ -7,7 +7,7 @@ class Wallet(val password: String) {
   var balance: Int = 0
 
   def syncWithNode(callback: Boolean => Unit): Unit =
-    KristPayPlugin.get.krist.getBalance(address, {
+    KristPay.get.krist.getBalance(address, {
       case Some(bal) =>
         balance = bal
         callback(true)
@@ -18,5 +18,5 @@ class Wallet(val password: String) {
   def allocate(amount: Int): Int = Math.min(balance + amount, balance)
 
   def transfer(address: String, amount: Int, callback: Option[Boolean] => Unit) =
-    KristPayPlugin.get.krist.transfer(privateKey, address, amount, callback)
+    KristPay.get.krist.transfer(privateKey, address, amount, callback)
 }

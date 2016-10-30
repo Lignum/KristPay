@@ -1,6 +1,6 @@
 package me.lignum.kristpay.commands
 
-import me.lignum.kristpay.KristPayPlugin
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
 import org.spongepowered.api.command.{CommandResult, CommandSource}
@@ -20,7 +20,7 @@ class Balance extends CommandExecutor {
   override def execute(src: CommandSource, args: CommandContext): CommandResult = src match {
     case player: Player =>
       val uuid = player.getUniqueId
-      val economy = KristPayPlugin.instance.economyService
+      val economy = KristPay.instance.economyService
 
       val account = economy.getOrCreateAccount(uuid)
 

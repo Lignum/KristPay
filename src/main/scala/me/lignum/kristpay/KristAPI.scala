@@ -154,9 +154,9 @@ class KristAPI(val node: URL) {
 
         scheduler.createTaskBuilder()
           .execute(_ => callback(result))
-          .submit(KristPayPlugin.instance)
+          .submit(KristPay.instance)
       })
-      .submit(KristPayPlugin.instance)
+      .submit(KristPay.instance)
   }
 
   def submitPost(route: String, body: JSONObject, callback: Option[String] => Unit): Unit = {
@@ -171,8 +171,8 @@ class KristAPI(val node: URL) {
 
         scheduler.createTaskBuilder()
           .execute(_ => callback(result))
-          .submit(KristPayPlugin.instance)
+          .submit(KristPay.instance)
       })
-      .submit(KristPayPlugin.instance)
+      .submit(KristPay.instance)
   }
 }

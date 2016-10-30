@@ -3,7 +3,7 @@ package me.lignum.kristpay.economy
 import java.util
 import java.util.{Optional, UUID}
 
-import me.lignum.kristpay.KristPayPlugin
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.service.context.ContextCalculator
 import org.spongepowered.api.service.economy.account.{Account, UniqueAccount}
 import org.spongepowered.api.service.economy.{Currency, EconomyService}
@@ -20,7 +20,7 @@ class KristEconomy extends EconomyService {
   }
 
   override def hasAccount(identifier: String): Boolean =
-    KristPayPlugin.get.database.accounts.exists(_.owner == identifier)
+    KristPay.get.database.accounts.exists(_.owner == identifier)
 
   override def hasAccount(uuid: UUID): Boolean = hasAccount(uuid.toString)
 
@@ -40,12 +40,12 @@ class KristEconomy extends EconomyService {
   }
 
   override def getOrCreateAccount(identifier: String): Optional[Account] =
-    KristPayPlugin.get.database.accounts.find(_.owner.equalsIgnoreCase(identifier)) match {
+    KristPay.get.database.accounts.find(_.owner.equalsIgnoreCase(identifier)) match {
       case Some(acc) => Optional.of(acc)
       case None =>
         val nacc = new KristAccount(identifier)
-        KristPayPlugin.get.database.accounts += nacc
-        KristPayPlugin.get.database.save()
+        KristPay.get.database.accounts += nacc
+        KristPay.get.database.save()
         Optional.of(nacc)
     }
 

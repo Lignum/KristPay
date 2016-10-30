@@ -1,6 +1,6 @@
 package me.lignum.kristpay.commands
 
-import me.lignum.kristpay.KristPayPlugin
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
 import org.spongepowered.api.command.{CommandResult, CommandSource}
@@ -17,8 +17,8 @@ object MasterBal {
 
 class MasterBal extends CommandExecutor {
   override def execute(src: CommandSource, args: CommandContext): CommandResult = {
-    val masterBal = KristPayPlugin.get.masterWallet.balance
-    val allocated = KristPayPlugin.get.database.getTotalDistributedKrist
+    val masterBal = KristPay.get.masterWallet.balance
+    val allocated = KristPay.get.database.getTotalDistributedKrist
     val allocPrct = Math.round(allocated.toDouble / masterBal.toDouble * 100.0)
     val unallocated = masterBal - allocated
     val unallocPrct = Math.round(unallocated.toDouble / masterBal.toDouble * 100.0)

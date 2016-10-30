@@ -1,6 +1,6 @@
 package me.lignum.kristpay.commands
 
-import me.lignum.kristpay.KristPayPlugin
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
@@ -49,14 +49,14 @@ class SetBalance extends CommandExecutor {
       }
 
       val uuid = target.getUniqueId
-      val economy = KristPayPlugin.instance.economyService
+      val economy = KristPay.instance.economyService
 
       val account = economy.getOrCreateAccount(uuid)
 
       if (account.isPresent) {
         val acc = account.get()
         val result = acc.setBalance(
-          KristPayPlugin.instance.currency, java.math.BigDecimal.valueOf(balance), Cause.of(NamedCause.source(src)), null
+          KristPay.instance.currency, java.math.BigDecimal.valueOf(balance), Cause.of(NamedCause.source(src)), null
         )
 
         if (result.getResult == ResultType.SUCCESS) {

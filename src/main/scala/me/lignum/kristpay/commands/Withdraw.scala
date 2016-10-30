@@ -1,10 +1,10 @@
 package me.lignum.kristpay.commands
 
-import me.lignum.kristpay.KristPayPlugin
-import org.spongepowered.api.command.{CommandResult, CommandSource}
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
+import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.cause.{Cause, NamedCause}
 import org.spongepowered.api.service.economy.transaction.ResultType
@@ -40,16 +40,16 @@ class Withdraw extends CommandExecutor {
       } else {
         val address = addressOpt.get()
         val amount = amountOpt.get()
-        val taxAmount = if (KristPayPlugin.get.database.taxes.enabled) {
-          Math.floor(Math.max(1.0, amount.toDouble * KristPayPlugin.get.database.taxes.withdrawMultiplier)).toInt
+        val taxAmount = if (KristPay.get.database.taxes.enabled) {
+          Math.floor(Math.max(1.0, amount.toDouble * KristPay.get.database.taxes.withdrawMultiplier)).toInt
         } else {
           0
         }
 
         val taxedAmount = amount - taxAmount
 
-        val minimumAmount = if (KristPayPlugin.get.database.taxes.enabled) {
-          Math.floor(1.0 / (1.0 - KristPayPlugin.get.database.taxes.withdrawMultiplier)).toInt
+        val minimumAmount = if (KristPay.get.database.taxes.enabled) {
+          Math.floor(1.0 / (1.0 - KristPay.get.database.taxes.withdrawMultiplier)).toInt
         } else {
           1
         }
@@ -73,7 +73,7 @@ class Withdraw extends CommandExecutor {
 
           CommandResult.success()
         } else {
-          val economy = KristPayPlugin.get.economyService
+          val economy = KristPay.get.economyService
           val uuid = player.getUniqueId
 
           val accountOpt = economy.getOrCreateAccount(uuid)
@@ -81,17 +81,17 @@ class Withdraw extends CommandExecutor {
           if (accountOpt.isPresent) {
             val account = accountOpt.get
             val result = account.withdraw(
-              KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(amount), Cause.of(NamedCause.simulated(player))
+              KristPay.get.currency, java.math.BigDecimal.valueOf(amount), Cause.of(NamedCause.simulated(player))
             )
 
             result.getResult match {
               case ResultType.SUCCESS =>
-                val master = KristPayPlugin.get.masterWallet
+                val master = KristPay.get.masterWallet
 
                 master.transfer(address, taxedAmount, {
                   case Some(ok) =>
                     if (ok) {
-                      val withdrawMsg = if (KristPayPlugin.get.database.taxes.enabled) {
+                      val withdrawMsg = if (KristPay.get.database.taxes.enabled) {
                         "Successfully withdrawn " + taxedAmount + " KST (" + amount + " KST - " + taxAmount + " KST tax)."
                       } else {
                         "Successfully withdrawn " + taxedAmount + " KST."
@@ -111,7 +111,7 @@ class Withdraw extends CommandExecutor {
 
                       // Refund
                       account.deposit(
-                        KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(amount),
+                        KristPay.get.currency, java.math.BigDecimal.valueOf(amount),
                         Cause.of(NamedCause.source(this)), null
                       )
                     }
@@ -125,7 +125,7 @@ class Withdraw extends CommandExecutor {
 
                     // Refund
                     account.deposit(
-                      KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(amount),
+                      KristPay.get.currency, java.math.BigDecimal.valueOf(amount),
                       Cause.of(NamedCause.source(this)), null
                     )
                 })

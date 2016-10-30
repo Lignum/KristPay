@@ -3,8 +3,8 @@ package me.lignum.kristpay
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.URL
 import java.text.SimpleDateFormat
-import java.util.{Date, UUID}
 import java.util.concurrent.TimeUnit
+import java.util.{Date, UUID}
 
 import com.google.inject.Inject
 import me.lignum.kristpay.commands._
@@ -25,8 +25,8 @@ import org.spongepowered.api.text.format.TextColors
   version = "1.0.0",
   authors = Array("Lignum")
 )
-class KristPayPlugin {
-  KristPayPlugin.instance = this
+class KristPay {
+  KristPay.instance = this
 
   val krist = new KristAPI(new URL("http://krist.ceriat.net"))
   var logger: Logger = _
@@ -80,11 +80,11 @@ class KristPayPlugin {
         krist.doesAddressExist(masterWallet.address, {
           case Some(exists) =>
             if (!exists)
-              fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
+              fatalError(KristPay.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
             startPlugin()
 
           case None =>
-            fatalError(KristPayPlugin.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
+            fatalError(KristPay.ADDRESS_DOESNT_EXIST_MSG, masterWallet.address)
             startPlugin()
         })
 
@@ -96,8 +96,8 @@ class KristPayPlugin {
     acc.depositWallet.transfer(masterWallet.address, amount, {
       case Some(ok) => if (ok) {
         masterWallet.syncWithNode(okk => if (okk) {
-          val taxAmount = if (KristPayPlugin.get.database.taxes.enabled) {
-            Math.floor(Math.max(1.0, amount.toDouble * KristPayPlugin.get.database.taxes.depositMultiplier)).toInt
+          val taxAmount = if (KristPay.get.database.taxes.enabled) {
+            Math.floor(Math.max(1.0, amount.toDouble * KristPay.get.database.taxes.depositMultiplier)).toInt
           } else {
             0
           }
@@ -143,7 +143,7 @@ class KristPayPlugin {
                     Math.min(newDepositBalance, database.floatingFunds.threshold)
 
                   val have = if (amt > 1) "have" else "has"
-                  val base = if (!KristPayPlugin.get.database.taxes.enabled) {
+                  val base = if (!KristPay.get.database.taxes.enabled) {
                     amt + " KST " + have + " been deposited to your account."
                   } else {
                     taxedAmt + " KST (" + amt + " KST - " + tax + " KST tax) " + have + " been deposited to your account."
@@ -177,7 +177,7 @@ class KristPayPlugin {
               acc, acc.depositWallet.balance,
               (amt, taxedAmt, tax) => {
                 val have = if (amt > 1) "have" else "has"
-                if (!KristPayPlugin.get.database.taxes.enabled) {
+                if (!KristPay.get.database.taxes.enabled) {
                   amt + " KST " + have + " been deposited to your account."
                 } else {
                   taxedAmt + " KST (" + amt + " KST - " + tax + " KST tax) " + have + " been deposited to your account."
@@ -220,10 +220,10 @@ class KristPayPlugin {
   }
 }
 
-object KristPayPlugin {
+object KristPay {
   val ADDRESS_DOESNT_EXIST_MSG = "The address {} doesn't exist."
 
-  var instance: KristPayPlugin = _
+  var instance: KristPay = _
 
   def get = instance
 }

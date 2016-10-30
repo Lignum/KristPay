@@ -1,10 +1,10 @@
 package me.lignum.kristpay.commands
 
-import me.lignum.kristpay.KristPayPlugin
-import org.spongepowered.api.command.{CommandResult, CommandSource}
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
+import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.cause.{Cause, NamedCause}
 import org.spongepowered.api.service.economy.transaction.ResultType
@@ -50,7 +50,7 @@ class Pay extends CommandExecutor {
 
           CommandResult.success()
         } else {
-          val economy = KristPayPlugin.get.economyService
+          val economy = KristPay.get.economyService
           val theirAccount = economy.getOrCreateAccount(target.getUniqueId)
           val ourAccount = economy.getOrCreateAccount(player.getUniqueId)
 
@@ -59,7 +59,7 @@ class Pay extends CommandExecutor {
             val ours = ourAccount.get()
 
             val result = ours.transfer(
-              theirs, KristPayPlugin.get.currency, java.math.BigDecimal.valueOf(amount),
+              theirs, KristPay.get.currency, java.math.BigDecimal.valueOf(amount),
               Cause.of(NamedCause.simulated(player)), null
             )
 

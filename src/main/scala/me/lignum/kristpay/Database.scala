@@ -49,7 +49,7 @@ class Database(dbFile: File) {
       pw.write(d.toString())
       pw.close()
     } catch {
-      case t: Throwable => KristPayPlugin.get.logger.error("Failed to create " + dbFile.getAbsolutePath, t)
+      case t: Throwable => KristPay.get.logger.error("Failed to create " + dbFile.getAbsolutePath, t)
     }
   }
 
@@ -110,9 +110,9 @@ class Database(dbFile: File) {
       }
     } catch {
       case e: JSONException =>
-        KristPayPlugin.get.logger.error("Failed to parse {}: {}", dbFile.getName.asInstanceOf[Any], e.getMessage.asInstanceOf[Any])
+        KristPay.get.logger.error("Failed to parse {}: {}", dbFile.getName.asInstanceOf[Any], e.getMessage.asInstanceOf[Any])
       case t: Throwable =>
-        KristPayPlugin.get.logger.info("Error while parsing kristpay config", t)
+        KristPay.get.logger.info("Error while parsing kristpay config", t)
     }
 
     if (accounts.foldLeft(false) { (a, b) => a || b.needsSave }) {

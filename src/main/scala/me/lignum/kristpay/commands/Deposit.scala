@@ -1,9 +1,9 @@
 package me.lignum.kristpay.commands
 
-import me.lignum.kristpay.KristPayPlugin
-import org.spongepowered.api.command.{CommandResult, CommandSource}
+import me.lignum.kristpay.KristPay
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
+import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
@@ -21,16 +21,16 @@ class Deposit extends CommandExecutor {
     case player: Player =>
       val uuid = player.getUniqueId
 
-      KristPayPlugin.get.database.accounts.find(_.owner.equals(uuid.toString)) match {
+      KristPay.get.database.accounts.find(_.owner.equals(uuid.toString)) match {
         case Some(acc) =>
           var msg = "Your deposit address is \"" + acc.depositWallet.address + "\"."
 
-          if (KristPayPlugin.get.database.floatingFunds.enabled) {
+          if (KristPay.get.database.floatingFunds.enabled) {
             msg += " You will not receive deposits instantly. Use /payout to see the next payout time."
           }
 
-          if (KristPayPlugin.get.database.taxes.enabled) {
-            val depositTaxPerct = Math.round(KristPayPlugin.get.database.taxes.depositMultiplier * 100.0).toInt
+          if (KristPay.get.database.taxes.enabled) {
+            val depositTaxPerct = Math.round(KristPay.get.database.taxes.depositMultiplier * 100.0).toInt
             msg += " There will be a " + depositTaxPerct + "% tax on all deposits."
           }
 
