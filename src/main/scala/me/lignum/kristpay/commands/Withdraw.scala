@@ -40,16 +40,16 @@ class Withdraw extends CommandExecutor {
       } else {
         val address = addressOpt.get()
         val amount = amountOpt.get()
-        val taxAmount = if (KristPay.get.database.taxes.enabled) {
-          Math.floor(Math.max(1.0, amount.toDouble * KristPay.get.database.taxes.withdrawMultiplier)).toInt
+        val taxAmount = if (KristPay.get.config.taxes.enabled) {
+          Math.floor(Math.max(1.0, amount.toDouble * KristPay.get.config.taxes.withdrawMultiplier)).toInt
         } else {
           0
         }
 
         val taxedAmount = amount - taxAmount
 
-        val minimumAmount = if (KristPay.get.database.taxes.enabled) {
-          Math.floor(1.0 / (1.0 - KristPay.get.database.taxes.withdrawMultiplier)).toInt
+        val minimumAmount = if (KristPay.get.config.taxes.enabled) {
+          Math.floor(1.0 / (1.0 - KristPay.get.config.taxes.withdrawMultiplier)).toInt
         } else {
           1
         }
@@ -91,7 +91,7 @@ class Withdraw extends CommandExecutor {
                 master.transfer(address, taxedAmount, {
                   case Some(ok) =>
                     if (ok) {
-                      val withdrawMsg = if (KristPay.get.database.taxes.enabled) {
+                      val withdrawMsg = if (KristPay.get.config.taxes.enabled) {
                         "Successfully withdrawn " + taxedAmount + " KST (" + amount + " KST - " + taxAmount + " KST tax)."
                       } else {
                         "Successfully withdrawn " + taxedAmount + " KST."

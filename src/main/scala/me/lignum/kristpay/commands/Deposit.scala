@@ -25,12 +25,12 @@ class Deposit extends CommandExecutor {
         case Some(acc) =>
           var msg = "Your deposit address is \"" + acc.depositWallet.address + "\"."
 
-          if (KristPay.get.database.floatingFunds.enabled) {
+          if (KristPay.get.config.floatingFunds.enabled) {
             msg += " You will not receive deposits instantly. Use /payout to see the next payout time."
           }
 
-          if (KristPay.get.database.taxes.enabled) {
-            val depositTaxPerct = Math.round(KristPay.get.database.taxes.depositMultiplier * 100.0).toInt
+          if (KristPay.get.config.taxes.enabled) {
+            val depositTaxPerct = Math.round(KristPay.get.config.taxes.depositMultiplier * 100.0).toInt
             msg += " There will be a " + depositTaxPerct + "% tax on all deposits."
           }
 

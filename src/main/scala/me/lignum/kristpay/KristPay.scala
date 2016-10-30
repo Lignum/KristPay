@@ -2,6 +2,7 @@ package me.lignum.kristpay
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.URL
+import java.nio.file.Path
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 import java.util.{Date, UUID}
@@ -11,6 +12,7 @@ import me.lignum.kristpay.commands._
 import me.lignum.kristpay.economy.{KristAccount, KristCurrency, KristEconomy}
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
+import org.spongepowered.api.config.ConfigDir
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.cause.{Cause, NamedCause}
 import org.spongepowered.api.event.game.state.{GameInitializationEvent, GamePreInitializationEvent, GameStoppingServerEvent}
@@ -43,12 +45,20 @@ class KristPay {
   val txLogFile = new File("kristpay.log")
   var txOut: PrintWriter = _
 
+  var configFile: File = _
+  var databaseFile: File = _
+
+  @Inject
+  @ConfigDir(sharedRoot = true)
+  var configDir: Path = _
+
+  var config: Configuration = _
+
   @Inject
   def setLogger(lg: Logger) = logger = lg
 
   @Listener
   def onPreInit(event: GamePreInitializationEvent): Unit = {
-    database = new Database(new File("kristpay.json"))
     economyService = new KristEconomy
 
     txOut = new PrintWriter(new FileOutputStream(txLogFile, true))
@@ -71,11 +81,17 @@ class KristPay {
 
   @Listener
   def onInit(event: GameInitializationEvent): Unit = {
+    configFile = configDir.resolve("kristpay.conf").toFile
+    databaseFile = configDir.resolve("kristpay.db").toFile
+
+    config = new Configuration(configFile)
+    database = new Database(databaseFile)
+
     krist.getMOTD({
       case Some(motd) =>
         logger.info("Krist is up! The message of the day is \"{}\".", motd)
 
-        masterWallet = new MasterWallet(database.kwPassword)
+        masterWallet = new MasterWallet(config.kwPassword)
 
         krist.doesAddressExist(masterWallet.address, {
           case Some(exists) =>
@@ -96,8 +112,8 @@ class KristPay {
     acc.depositWallet.transfer(masterWallet.address, amount, {
       case Some(ok) => if (ok) {
         masterWallet.syncWithNode(okk => if (okk) {
-          val taxAmount = if (KristPay.get.database.taxes.enabled) {
-            Math.floor(Math.max(1.0, amount.toDouble * KristPay.get.database.taxes.depositMultiplier)).toInt
+          val taxAmount = if (config.taxes.enabled) {
+            Math.floor(Math.max(1.0, amount.toDouble * config.taxes.depositMultiplier)).toInt
           } else {
             0
           }
@@ -129,21 +145,21 @@ class KristPay {
 
   def startFloatingDepositSchedule(): Unit = {
     Sponge.getScheduler.createTaskBuilder()
-      .interval(database.floatingFunds.interval, TimeUnit.SECONDS)
+      .interval(config.floatingFunds.interval, TimeUnit.SECONDS)
       .execute(_ => {
         database.accounts.foreach(acc => {
           acc.depositWallet.syncWithNode(ok => if (ok) {
             if (acc.depositWallet.balance > 0) {
-              val depositAmount = Math.min(acc.depositWallet.balance, database.floatingFunds.threshold)
+              val depositAmount = Math.min(acc.depositWallet.balance, config.floatingFunds.threshold)
               makeDeposit(
                 acc, depositAmount,
                 (amt, taxedAmt, tax) => {
                   val newDepositBalance = acc.depositWallet.balance - depositAmount
                   val nextDepositAmount =
-                    Math.min(newDepositBalance, database.floatingFunds.threshold)
+                    Math.min(newDepositBalance, config.floatingFunds.threshold)
 
                   val have = if (amt > 1) "have" else "has"
-                  val base = if (!KristPay.get.database.taxes.enabled) {
+                  val base = if (!config.taxes.enabled) {
                     amt + " KST " + have + " been deposited to your account."
                   } else {
                     taxedAmt + " KST (" + amt + " KST - " + tax + " KST tax) " + have + " been deposited to your account."
@@ -152,7 +168,7 @@ class KristPay {
                   if (nextDepositAmount > 0) {
                     base +
                       " You will receive " + nextDepositAmount + " KST (out of " + newDepositBalance + " KST)" +
-                      " in " + database.floatingFunds.interval + "s."
+                      " in " + config.floatingFunds.interval + "s."
                   } else {
                     base
                   }
@@ -162,7 +178,7 @@ class KristPay {
           })
         })
 
-        nextPayoutTime = System.currentTimeMillis() + (database.floatingFunds.interval * 1000L)
+        nextPayoutTime = System.currentTimeMillis() + (config.floatingFunds.interval * 1000L)
       })
       .submit(this)
   }
@@ -177,7 +193,7 @@ class KristPay {
               acc, acc.depositWallet.balance,
               (amt, taxedAmt, tax) => {
                 val have = if (amt > 1) "have" else "has"
-                if (!KristPay.get.database.taxes.enabled) {
+                if (!config.taxes.enabled) {
                   amt + " KST " + have + " been deposited to your account."
                 } else {
                   taxedAmt + " KST (" + amt + " KST - " + tax + " KST tax) " + have + " been deposited to your account."
@@ -208,7 +224,7 @@ class KristPay {
       logger.info("Using master address \"{}\"!", masterWallet.address)
       masterWallet.startSyncSchedule()
 
-      if (database.floatingFunds.enabled) {
+      if (config.floatingFunds.enabled) {
         Sponge.getCommandManager.register(this, Payout.spec, "payout", "nextpayout")
         startFloatingDepositSchedule()
       } else {
