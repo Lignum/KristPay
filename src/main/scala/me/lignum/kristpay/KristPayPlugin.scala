@@ -1,8 +1,9 @@
 package me.lignum.kristpay
 
-import java.io.File
+import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.URL
-import java.util.UUID
+import java.text.SimpleDateFormat
+import java.util.{Date, UUID}
 import java.util.concurrent.TimeUnit
 
 import com.google.inject.Inject
@@ -39,6 +40,9 @@ class KristPayPlugin {
 
   var failed = false
 
+  val txLogFile = new File("kristpay.log")
+  var txOut: PrintWriter = _
+
   @Inject
   def setLogger(lg: Logger) = logger = lg
 
@@ -46,7 +50,18 @@ class KristPayPlugin {
   def onPreInit(event: GamePreInitializationEvent): Unit = {
     database = new Database(new File("kristpay.json"))
     economyService = new KristEconomy
+
+    txOut = new PrintWriter(new FileOutputStream(txLogFile, true))
+
     Sponge.getServiceManager.setProvider(this, classOf[EconomyService], economyService)
+  }
+
+  val txLogDateFormat = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss")
+
+  def logTransaction(msg: String): Unit = {
+    val now = new Date()
+    txOut.println(txLogDateFormat.format(now) + " => " + msg)
+    txOut.flush()
   }
 
   def fatalError(error: String, args: Any*): Unit = {
@@ -159,6 +174,7 @@ class KristPayPlugin {
   @Listener
   def onServerStopping(event: GameStoppingServerEvent): Unit = {
     database.save()
+    txOut.close()
   }
 
   def startPlugin(): Unit = {
