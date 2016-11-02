@@ -16,6 +16,7 @@ class Configuration(configFile: File) {
   val taxes = Taxes(enabled = true, 0.02, 0.02)
 
   var kwPassword: String = _
+  var defaultBalance: Int = _
 
   private def load(): Unit = {
     if (loader.canLoad) {
@@ -47,6 +48,8 @@ class Configuration(configFile: File) {
       // valueInclTaxes = value - value * taxMultiplier
       rootNode.getNode("taxes", "depositMultiplier").setValue(taxes.depositMultiplier)
       rootNode.getNode("taxes", "withdrawMultiplier").setValue(taxes.withdrawMultiplier)
+
+      rootNode.getNode("defaultBalance").setValue(100)
     }
 
     if (loader.canSave) {
@@ -64,6 +67,8 @@ class Configuration(configFile: File) {
     taxes.enabled = rootNode.getNode("taxes", "enabled").getBoolean(taxes.enabled)
     taxes.depositMultiplier = rootNode.getNode("taxes", "depositMultiplier").getDouble(taxes.depositMultiplier)
     taxes.withdrawMultiplier = rootNode.getNode("taxes", "withdrawMultiplier").getDouble(taxes.withdrawMultiplier)
+
+    defaultBalance = rootNode.getNode("defaultBalance").getInt(100)
   }
 
   load()

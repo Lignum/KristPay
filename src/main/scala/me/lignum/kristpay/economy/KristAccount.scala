@@ -110,7 +110,8 @@ class KristAccount(
     }
   }
 
-  override def getDefaultBalance(currency: Currency): BigDecimal = BigDecimal.ZERO
+  override def getDefaultBalance(currency: Currency): BigDecimal =
+    java.math.BigDecimal.valueOf(KristPay.get.config.defaultBalance)
 
   override def resetBalances(cause: Cause, contexts: util.Set[Context]): util.Map[Currency, TransactionResult] = {
     val result = resetBalance(KristPay.instance.currency, cause, contexts)

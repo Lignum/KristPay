@@ -4,6 +4,7 @@ import java.util
 import java.util.{Optional, UUID}
 
 import me.lignum.kristpay.KristPay
+import org.spongepowered.api.event.cause.{Cause, NamedCause}
 import org.spongepowered.api.service.context.ContextCalculator
 import org.spongepowered.api.service.economy.account.{Account, UniqueAccount}
 import org.spongepowered.api.service.economy.{Currency, EconomyService}
@@ -44,6 +45,13 @@ class KristEconomy extends EconomyService {
       case Some(acc) => Optional.of(acc)
       case None =>
         val nacc = new KristAccount(identifier)
+        nacc.setBalance(
+          getDefaultCurrency,
+          nacc.getDefaultBalance(getDefaultCurrency),
+          Cause.of(NamedCause.source(this)),
+          null
+        )
+
         KristPay.get.database.accounts += nacc
         KristPay.get.database.save()
         Optional.of(nacc)
