@@ -54,6 +54,8 @@ class EconRegister extends CommandExecutor {
     if (!accountOpt.isPresent) {
       src.sendMessage(Text.of(TextColors.RED, "Failed to register account!"))
     } else {
+      KristPay.get.database.save()
+
       val account = accountOpt.get()
       val txResult = account.setBalance(
         economy.getDefaultCurrency,
