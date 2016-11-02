@@ -220,6 +220,7 @@ class KristPay {
       Sponge.getCommandManager.register(this, Withdraw.spec, "withdraw")
       Sponge.getCommandManager.register(this, Deposit.spec, "deposit")
       Sponge.getCommandManager.register(this, MasterBal.spec, "masterbalance", "masterbal")
+      Sponge.getCommandManager.register(this, EconRegister.spec, "econregister")
 
       logger.info("Using master address \"{}\"!", masterWallet.address)
       masterWallet.startSyncSchedule()
