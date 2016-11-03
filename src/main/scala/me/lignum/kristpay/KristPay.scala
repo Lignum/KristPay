@@ -143,11 +143,19 @@ class KristPay {
       case None =>
     })
 
+  def filterOnlinePlayers(acc: KristAccount) =
+    if (acc.isUnique) {
+      val playerOpt = Sponge.getServer.getPlayer(UUID.fromString(acc.owner))
+      playerOpt.isPresent && playerOpt.get().isOnline
+    } else {
+      false
+    }
+
   def startFloatingDepositSchedule(): Unit = {
     Sponge.getScheduler.createTaskBuilder()
       .interval(config.floatingFunds.interval, TimeUnit.SECONDS)
       .execute(_ => {
-        database.accounts.foreach(acc => {
+        database.accounts.filter(filterOnlinePlayers).foreach(acc => {
           acc.depositWallet.syncWithNode(ok => if (ok) {
             if (acc.depositWallet.balance > 0) {
               val depositAmount = Math.min(acc.depositWallet.balance, config.floatingFunds.threshold)
@@ -186,7 +194,7 @@ class KristPay {
   def startDepositSchedule(): Unit = {
     Sponge.getScheduler.createTaskBuilder()
       .interval(5, TimeUnit.SECONDS)
-      .execute(_ => database.accounts.foreach(acc => {
+      .execute(_ => database.accounts.filter(filterOnlinePlayers).foreach(acc => {
         acc.depositWallet.syncWithNode(ok => if (ok) {
           if (acc.depositWallet.balance > 0) {
             makeDeposit(
