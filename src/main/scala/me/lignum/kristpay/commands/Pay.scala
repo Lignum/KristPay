@@ -65,10 +65,14 @@ class Pay extends CommandExecutor {
 
             result.getResult match {
               case ResultType.SUCCESS =>
+                val amountTransferred = result.getAmount.intValue
+
                 src.sendMessage(
-                  Text.builder("Successfully transferred " + result.getAmount.intValue() + " KST to " + target.getName + ".")
-                    .color(TextColors.GREEN)
-                    .build()
+                  Text.of(TextColors.GREEN, "Successfully transferred " + amountTransferred + " KST to " + target.getName + ".")
+                )
+
+                target.sendMessage(
+                  Text.of(TextColors.GREEN, "You have received " + amountTransferred + " KST from " + player.getName)
                 )
 
               case ResultType.ACCOUNT_NO_FUNDS =>
