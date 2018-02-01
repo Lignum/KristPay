@@ -6,7 +6,7 @@ import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
 import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.entity.living.player.Player
-import org.spongepowered.api.event.cause.{Cause, NamedCause}
+import org.spongepowered.api.event.cause.{Cause, EventContext, EventContextKeys}
 import org.spongepowered.api.service.economy.transaction.ResultType
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
@@ -81,7 +81,9 @@ class Withdraw extends CommandExecutor {
           if (accountOpt.isPresent) {
             val account = accountOpt.get
             val result = account.withdraw(
-              KristPay.get.currency, java.math.BigDecimal.valueOf(amount), Cause.of(NamedCause.simulated(player))
+              KristPay.get.currency, java.math.BigDecimal.valueOf(amount), Cause.of(EventContext.builder()
+                .add(EventContextKeys.PLAYER_SIMULATED, player.getProfile)
+                .build(), this)
             )
 
             result.getResult match {
@@ -112,7 +114,7 @@ class Withdraw extends CommandExecutor {
                       // Refund
                       account.deposit(
                         KristPay.get.currency, java.math.BigDecimal.valueOf(amount),
-                        Cause.of(NamedCause.source(this)), null
+                        Cause.of(EventContext.empty(), this), null
                       )
                     }
 
@@ -126,7 +128,7 @@ class Withdraw extends CommandExecutor {
                     // Refund
                     account.deposit(
                       KristPay.get.currency, java.math.BigDecimal.valueOf(amount),
-                      Cause.of(NamedCause.source(this)), null
+                      Cause.of(EventContext.empty(), this), null
                     )
                 })
 

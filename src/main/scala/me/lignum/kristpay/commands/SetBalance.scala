@@ -6,7 +6,7 @@ import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
 import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.entity.living.player.Player
-import org.spongepowered.api.event.cause.{Cause, NamedCause}
+import org.spongepowered.api.event.cause.{Cause, EventContext}
 import org.spongepowered.api.service.economy.transaction.ResultType
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
@@ -56,7 +56,7 @@ class SetBalance extends CommandExecutor {
       if (account.isPresent) {
         val acc = account.get()
         val result = acc.setBalance(
-          KristPay.instance.currency, java.math.BigDecimal.valueOf(balance), Cause.of(NamedCause.source(src)), null
+          KristPay.instance.currency, java.math.BigDecimal.valueOf(balance), Cause.of(EventContext.empty(), this), null
         )
 
         if (result.getResult == ResultType.SUCCESS) {
