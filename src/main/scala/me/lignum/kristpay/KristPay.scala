@@ -14,7 +14,7 @@ import org.slf4j.Logger
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.config.ConfigDir
 import org.spongepowered.api.event.Listener
-import org.spongepowered.api.event.cause.{Cause, NamedCause}
+import org.spongepowered.api.event.cause.{Cause, EventContext}
 import org.spongepowered.api.event.game.state.{GameInitializationEvent, GamePreInitializationEvent, GameStoppingServerEvent}
 import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.service.economy.EconomyService
@@ -122,7 +122,7 @@ class KristPay {
 
           acc.deposit(
             currency, java.math.BigDecimal.valueOf(taxedAmount),
-            Cause.of(NamedCause.source(this)), null
+            Cause.of(EventContext.empty(), this), null
           )
 
           if (acc.isUnique) {

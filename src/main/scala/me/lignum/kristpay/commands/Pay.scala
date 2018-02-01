@@ -6,7 +6,7 @@ import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
 import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.entity.living.player.Player
-import org.spongepowered.api.event.cause.{Cause, NamedCause}
+import org.spongepowered.api.event.cause.{Cause, EventContext, EventContextKeys}
 import org.spongepowered.api.service.economy.transaction.ResultType
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
@@ -60,7 +60,9 @@ class Pay extends CommandExecutor {
 
             val result = ours.transfer(
               theirs, KristPay.get.currency, java.math.BigDecimal.valueOf(amount),
-              Cause.of(NamedCause.simulated(player)), null
+              Cause.of(EventContext.builder()
+                .add(EventContextKeys.PLAYER_SIMULATED, player.getProfile)
+                .build(), this), null
             )
 
             result.getResult match {

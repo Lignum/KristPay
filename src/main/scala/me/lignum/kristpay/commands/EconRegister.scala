@@ -7,7 +7,7 @@ import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
-import org.spongepowered.api.event.cause.{Cause, NamedCause}
+import org.spongepowered.api.event.cause.{Cause, EventContext}
 import org.spongepowered.api.service.economy.transaction.ResultType
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
@@ -60,7 +60,7 @@ class EconRegister extends CommandExecutor {
       val txResult = account.setBalance(
         economy.getDefaultCurrency,
         java.math.BigDecimal.valueOf(balance),
-        Cause.of(NamedCause.source(this))
+        Cause.of(EventContext.empty(), this)
       )
 
       val result = txResult.getResult
