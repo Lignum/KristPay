@@ -64,7 +64,7 @@ class Withdraw extends CommandExecutor {
           return CommandResult.success()
         }
 
-        if (!address.matches("^(?:[a-f0-9]{10}|k[a-z0-9]{9})$")) {
+        if (!address.matches("^(?:[a-f0-9]{10}|k[a-z0-9]{9}|(?:[a-z0-9-_]{1,32}@)?[a-z0-9]{1,64}\\.kst)$")) {
           src.sendMessage(
             Text.builder("\"" + address + "\" is not a valid Krist address!")
               .color(TextColors.RED)
